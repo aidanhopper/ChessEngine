@@ -1,11 +1,5 @@
 module Fen where
 
--- <FEN> ::=  <Piece Placement>
---        ' ' <Side to move>
---        ' ' <Castling ability>
---        ' ' <En passant target square>
---        ' ' <Halfmove clock>
---        ' ' <Fullmove counter>
 data Fen = Fen
   { piecePlacement :: String,
     sideToMove :: String,
@@ -34,3 +28,23 @@ parseFen str =
       | otherwise = (c : head rest) : tail rest
       where
         rest = split delim cs
+
+-- <FEN> ::=  <Piece Placement>
+--        ' ' <Side to move>
+--        ' ' <Castling ability>
+--        ' ' <En passant target square>
+--        ' ' <Halfmove clock>
+--        ' ' <Fullmove counter>
+buildFen :: Fen -> String
+buildFen fen =
+  piecePlacement fen
+    ++ " "
+    ++ sideToMove fen
+    ++ " "
+    ++ castlingAbility fen
+    ++ " "
+    ++ enPassantTargetSquare fen
+    ++ " "
+    ++ show (halfmoveClock fen)
+    ++ " "
+    ++ show (fullmoveClock fen)
