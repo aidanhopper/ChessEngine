@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use isJust" #-}
 module Utils where
 
 import Data.Char
@@ -12,7 +15,8 @@ createBoard str = reverse $ f str [""]
     f :: String -> [String] -> [String]
     f [] acc = acc
     f (x : xs) acc
-      | x /= '/' = f xs $ (head acc ++ g x) : tail acc | otherwise = f xs $ "" : acc
+      | x /= '/' = f xs $ (head acc ++ g x) : tail acc
+      | otherwise = f xs $ "" : acc
       where
         g :: Char -> String
         g '1' = " "
@@ -75,24 +79,37 @@ convert (Indexes (row, col)) = Algebraic $ getCol ++ getRow
       7 -> "h"
       _ -> error "Column is out of bounds."
 
-markBoard :: [Position] -> [String] -> [String]
+markBoard :: [(Position, Char)] -> [String] -> [String]
 markBoard posList = f 0
   where
-    posListIndexes :: [Position]
+    posListIndexes :: [(Position, Char)]
     posListIndexes = map h posList
 
-    h :: Position -> Position
-    h (Indexes (r, c)) = Indexes (r, c)
-    h (Algebraic pos) = convert $ Algebraic pos
-    h None = None
+    h :: (Position, Char) -> (Position, Char)
+    h (Indexes (r, c), char) = (Indexes (r, c), char)
+    h (Algebraic pos, char) = (convert $ Algebraic pos, char)
+
+    getChar :: Position -> [(Position, Char)] -> Maybe Char
+    getChar _ [] = Nothing
+    getChar (Indexes (i, j)) ((Indexes (r, c), char) : xs) =
+      if r == i && c == j
+        then Just char
+        else getChar (Indexes (i, j)) xs
 
     g :: Int -> Int -> String -> String
     g _ _ [] = []
     g i j (col : cols) =
-      if Indexes (i, j) `elem` posListIndexes
-        then 'x' : g i (j + 1) cols
+      if char /= Nothing
+        then extract char : g i (j + 1) cols
         else col : g i (j + 1) cols
+      where
+        char = Indexes (i, j) `getChar` posListIndexes
+        extract (Just x) = x
 
     f :: Int -> [String] -> [String]
     f _ [] = []
     f i (row : rows) = g i 0 row : f (i + 1) rows
+
+boardToPiecePlacement :: [String] -> String
+boardToPiecePlacement [] = ""
+boardToPiecePlacement (row:rows) = ""

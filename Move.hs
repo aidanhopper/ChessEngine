@@ -1,13 +1,19 @@
 module Move where
 
 import Data.Char
+import Distribution.Simple.Program (ConfiguredProgram (programLocation))
 import Fen
+import GHC.Arr (thawSTArray)
 import Utils
 
 isWithinBoard :: Position -> Bool
 isWithinBoard (Indexes (r, c)) = r >= 0 && c >= 0 && r < 8 && c < 8
 
--- TODO get rid of moves that put the king in check
+{- Generates all possible moves given a fen string
+ - and a input position.
+ -
+ - TODO get rid of moves that put the king in check
+ - -}
 generateMoves :: String -> Position -> [Position]
 generateMoves fenString (Algebraic pos) =
   generateMoves fenString $ convert $ Algebraic pos
@@ -294,18 +300,74 @@ generateMoves fenString (Indexes (row, col)) =
         checkUpRight = iterator pos (-1) 1
         checkUpLeft = iterator pos (-1) (-1)
 
-applyMove :: String -> Position -> Position -> String
-applyMove fenString (Algebraic start) (Algebraic end) =
-  applyMove fenString (convert (Algebraic start)) (convert (Algebraic end))
-applyMove
+{- Take in a moving position and a target position
+ - and return a list of possible fen strings that
+ - move can produce (The reason for list is because
+ - of pawn promotion which produces 4 different
+ - possible fen strings).
+ -
+ - TODO Deal with wrong side trying to make a move.
+ - TODO Maybe make a move validator?
+ - TODO Make doMove return a list of fen strings instead of board
+ - -}
+doMove :: Position -> Position -> String -> [String]
+doMove (Algebraic moving) (Algebraic target) fenString =
+  doMove (convert (Algebraic moving)) (convert (Algebraic target)) fenString 
+doMove
+  (Indexes (movingRow, movingCol))
+  (Indexes (targetRow, targetCol))
   fenString
-  (Indexes (startRow, startCol))
-  (Indexes (endRow, endCol))
-    | not (isWithinBoard start) || not (isWithinBoard end) =
+    | not (isWithinBoard movingSquare) || not (isWithinBoard targetSquare) =
         error "Start or end is not within the bounds of the board."
-    | otherwise = ""
+    | otherwise = case toLower movingPiece of
+        'p' -> doPawnMove
+        'n' -> [""]
+        'b' -> [""]
+        'r' -> [""]
+        'k' -> [""]
+        'q' -> [""]
+        _ -> error "Invalid piece on the board."
     where
-      start = Indexes (startRow, startCol)
-      end = Indexes (endRow, endCol)
+      movingSquare = Indexes (movingRow, movingCol)
+      targetSquare = Indexes (targetRow, targetCol)
       fen = parseFen fenString
       board = createBoard $ piecePlacement fen
+      side = sideToMove fen
+      enPassant = enPassantTargetSquare fen
+      movingPiece = board !! movingRow !! movingCol
+      targetPiece = board !! targetRow !! targetCol
+      moving = convert movingSquare
+      target = convert targetSquare
+
+      doPawnMove :: [String]
+      doPawnMove
+        | isPawnPromo = doPawnPromoMove
+        | isEnPassant = doEnPassantMove
+        | isLeap = doLeapMove
+        | otherwise = doRegularMove
+        where
+          isPawnPromo
+            | side == "w" = targetRow == 0
+            | side == "b" = targetRow == 7
+            | otherwise = False
+
+          isEnPassant =
+            convert (Indexes (targetRow, targetCol)) == Algebraic enPassant
+
+          isLeap
+            | side == "w" && movingRow == 6 && targetRow == 4 = True
+            | side == "b" && movingRow == 1 && targetRow == 3 = True
+            | otherwise = False
+
+          doPawnPromoMove :: [String]
+          doPawnPromoMove = []
+
+          doEnPassantMove :: [String]
+          doEnPassantMove = []
+
+          doLeapMove :: [String]
+          doLeapMove = []
+
+          doRegularMove :: [String]
+          doRegularMove =
+            markBoard [(moving, ' '), (target, movingPiece)] board
