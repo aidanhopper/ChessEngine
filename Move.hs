@@ -308,11 +308,10 @@ generateMoves fenString (Indexes (row, col)) =
  -
  - TODO Deal with wrong side trying to make a move.
  - TODO Maybe make a move validator?
- - TODO Make doMove return a list of fen strings instead of board
  - -}
 doMove :: Position -> Position -> String -> [String]
 doMove (Algebraic moving) (Algebraic target) fenString =
-  doMove (convert (Algebraic moving)) (convert (Algebraic target)) fenString 
+  doMove (convert (Algebraic moving)) (convert (Algebraic target)) fenString
 doMove
   (Indexes (movingRow, movingCol))
   (Indexes (targetRow, targetCol))
@@ -321,11 +320,11 @@ doMove
         error "Start or end is not within the bounds of the board."
     | otherwise = case toLower movingPiece of
         'p' -> doPawnMove
-        'n' -> [""]
-        'b' -> [""]
-        'r' -> [""]
-        'k' -> [""]
-        'q' -> [""]
+        'n' -> []
+        'b' -> []
+        'r' -> []
+        'k' -> []
+        'q' -> []
         _ -> error "Invalid piece on the board."
     where
       movingSquare = Indexes (movingRow, movingCol)
@@ -338,6 +337,16 @@ doMove
       targetPiece = board !! targetRow !! targetCol
       moving = convert movingSquare
       target = convert targetSquare
+      halfmove = halfmoveClock fen
+      fullmove = fullmoveClock fen
+      isCapture = targetPiece /= ' '
+      newFenBase =
+        fen
+          { sideToMove = if side == "w" then "b" else "w",
+            enPassantTargetSquare = "-",
+            fullmoveClock = if side == "b" then fullmove + 1 else fullmove,
+            halfmoveClock = if isCapture then 0 else halfmove + 1
+          }
 
       doPawnMove :: [String]
       doPawnMove
@@ -346,10 +355,12 @@ doMove
         | isLeap = doLeapMove
         | otherwise = doRegularMove
         where
+          op | side == "w" = (-) | otherwise = (+)
+
           isPawnPromo
             | side == "w" = targetRow == 0
             | side == "b" = targetRow == 7
-            | otherwise = False
+            | otherwise = error "Invalid side in fen string."
 
           isEnPassant =
             convert (Indexes (targetRow, targetCol)) == Algebraic enPassant
@@ -363,11 +374,45 @@ doMove
           doPawnPromoMove = []
 
           doEnPassantMove :: [String]
-          doEnPassantMove = []
+          doEnPassantMove =
+            [ buildFen $
+                newFenBase
+                  { piecePlacement =
+                      toPiecePlacement $
+                        markBoard
+                          [ (moving, ' '),
+                            (target, movingPiece),
+                            ( convert $
+                                Indexes (targetRow `op` (-1), targetCol),
+                              ' '
+                            )
+                          ]
+                          board,
+                    halfmoveClock = 0
+                  }
+            ]
 
           doLeapMove :: [String]
-          doLeapMove = []
+          doLeapMove =
+            [ buildFen $
+                newFenBase
+                  { piecePlacement =
+                      toPiecePlacement $
+                        markBoard [(moving, ' '), (target, movingPiece)] board,
+                    enPassantTargetSquare =
+                      (\(Algebraic x) -> x) $
+                        convert (Indexes (movingRow `op` 1, movingCol)),
+                    halfmoveClock = 0
+                  }
+            ]
 
           doRegularMove :: [String]
           doRegularMove =
-            markBoard [(moving, ' '), (target, movingPiece)] board
+            [ buildFen $
+                newFenBase
+                  { piecePlacement =
+                      toPiecePlacement $
+                        markBoard [(moving, ' '), (target, movingPiece)] board,
+                    halfmoveClock = 0
+                  }
+            ]

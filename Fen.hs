@@ -29,12 +29,6 @@ parseFen str =
       where
         rest = split delim cs
 
--- <FEN> ::=  <Piece Placement>
---        ' ' <Side to move>
---        ' ' <Castling ability>
---        ' ' <En passant target square>
---        ' ' <Halfmove clock>
---        ' ' <Fullmove counter>
 buildFen :: Fen -> String
 buildFen fen =
   piecePlacement fen

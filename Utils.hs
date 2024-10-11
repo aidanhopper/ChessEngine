@@ -110,6 +110,16 @@ markBoard posList = f 0
     f _ [] = []
     f i (row : rows) = g i 0 row : f (i + 1) rows
 
-boardToPiecePlacement :: [String] -> String
-boardToPiecePlacement [] = ""
-boardToPiecePlacement (row:rows) = ""
+toPiecePlacement :: [String] -> String
+toPiecePlacement board =
+  tail $ foldl (\x acc -> x ++ "/" ++ acc) "" (g board)
+  where
+    g [] = []
+    g (row : rows) = f row 0 : g rows
+    f [] n
+      | n == 0 = []
+      | otherwise = [head (show n)]
+    f (col : cols) n
+      | col == ' ' = f cols (n + 1)
+      | n == 0 = col : f cols 0
+      | otherwise = head (show n) : col : f cols 0
