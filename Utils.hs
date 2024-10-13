@@ -4,6 +4,7 @@
 module Utils where
 
 import Data.Char
+import Debug.Trace
 import Fen
 
 data Position = Algebraic String | Indexes (Int, Int) | None
@@ -44,40 +45,54 @@ printBoard board = do
     addSpaces (c : cs) = c : ' ' : addSpaces cs
 
 convert :: Position -> Position
-convert (Algebraic target) = Indexes (row target, col target)
+convert (Algebraic target) = out
   where
-    col :: String -> Int
+    rowOut = row target
+    colOut = col target
+
+    out
+      | rowOut /= Nothing && colOut /= Nothing =
+          Indexes ((\(Just x) -> x) rowOut, (\(Just x) -> x) colOut)
+      | otherwise = None
+
+    col :: String -> Maybe Int
     col [x, _] = case x of
-      'a' -> 0
-      'b' -> 1
-      'c' -> 2
-      'd' -> 3
-      'e' -> 4
-      'f' -> 5
-      'g' -> 6
-      'h' -> 7
-      _ -> error "Invalid alphanumeric chess position column letter"
-    col _ = error "Invalid alphanumeric chess position."
-    row :: String -> Int
-    row [_, x] = 8 - (read [x] :: Int)
-    row _ = error "Invalid alphanumeric chess position."
-convert (Indexes (row, col)) = Algebraic $ getCol ++ getRow
+      'a' -> Just 0
+      'b' -> Just 1
+      'c' -> Just 2
+      'd' -> Just 3
+      'e' -> Just 4
+      'f' -> Just 5
+      'g' -> Just 6
+      'h' -> Just 7
+      _ -> Nothing
+    col _ = Nothing
+
+    row :: String -> Maybe Int
+    row [_, x] = Just $ 8 - (read [x] :: Int)
+    row _ = Nothing
+convert (Indexes (row, col)) = out
   where
+    extract (Just x) = x
+    out
+      | getCol /= Nothing && getRow /= Nothing =
+          Algebraic $ extract getCol ++ extract getRow
+      | otherwise = None
     getRow =
       let num = 8 - row
-       in if num >= 0 && num < 8
-            then show num
-            else error "Row is out of bounds."
+       in if num > 0 && num <= 8
+            then Just $ show num
+            else Nothing
     getCol = case col of
-      0 -> "a"
-      1 -> "b"
-      2 -> "c"
-      3 -> "d"
-      4 -> "e"
-      5 -> "f"
-      6 -> "g"
-      7 -> "h"
-      _ -> error "Column is out of bounds."
+      0 -> Just "a"
+      1 -> Just "b"
+      2 -> Just "c"
+      3 -> Just "d"
+      4 -> Just "e"
+      5 -> Just "f"
+      6 -> Just "g"
+      7 -> Just "h"
+      _ -> Nothing
 
 markBoard :: [(Position, Char)] -> [String] -> [String]
 markBoard posList = f 0
@@ -123,3 +138,41 @@ toPiecePlacement board =
       | col == ' ' = f cols (n + 1)
       | n == 0 = col : f cols 0
       | otherwise = head (show n) : col : f cols 0
+
+printFenString :: String -> IO ()
+printFenString fenString = do
+  let fen = parseFen fenString
+  let board = createBoard $ piecePlacement fen
+  putStrLn $
+    "8 |"
+      ++ addSpaces (head board)
+      ++ "  side to move      "
+      ++ sideToMove fen
+  putStrLn $
+    "7 |"
+      ++ addSpaces (board !! 1)
+      ++ "  castling ability  "
+      ++ castlingAbility fen
+  putStrLn $
+    "6 |"
+      ++ addSpaces (board !! 2)
+      ++ "  enpassant square  "
+      ++ enPassantTargetSquare fen
+  putStrLn $
+    "5 |"
+      ++ addSpaces (board !! 3)
+      ++ "  halfmove clock    "
+      ++ show (halfmoveClock fen)
+  putStrLn $
+    "4 |"
+      ++ addSpaces (board !! 4)
+      ++ "  fullmove clock    "
+      ++ show (fullmoveClock fen)
+  putStrLn $ "3 |" ++ addSpaces (board !! 5)
+  putStrLn $ "2 |" ++ addSpaces (board !! 6)
+  putStrLn $ "1 |" ++ addSpaces (board !! 7)
+  putStrLn "   ---------------"
+  putStrLn "   a b c d e f g h"
+  where
+    addSpaces [] = []
+    addSpaces (c : cs) = c : ' ' : addSpaces cs

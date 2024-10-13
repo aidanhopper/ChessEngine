@@ -42,3 +42,14 @@ buildFen fen =
     ++ show (halfmoveClock fen)
     ++ " "
     ++ show (fullmoveClock fen)
+
+removeCastlingRight :: String -> String -> String
+removeCastlingRight chars rights
+  | f chars rights /= "" = f chars rights
+  | otherwise = "-"
+  where
+    f :: String -> String -> String
+    f _ [] = []
+    f chars (c : cs)
+      | c `notElem` chars = c : f chars cs
+      | otherwise = f chars cs

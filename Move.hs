@@ -1,9 +1,8 @@
 module Move where
 
 import Data.Char
-import Distribution.Simple.Program (ConfiguredProgram (programLocation))
+import Debug.Trace
 import Fen
-import GHC.Arr (thawSTArray)
 import Utils
 
 isWithinBoard :: Position -> Bool
@@ -14,20 +13,21 @@ isWithinBoard (Indexes (r, c)) = r >= 0 && c >= 0 && r < 8 && c < 8
  -
  - TODO get rid of moves that put the king in check
  - -}
-generateMoves :: String -> Position -> [Position]
-generateMoves fenString (Algebraic pos) =
-  generateMoves fenString $ convert $ Algebraic pos
-generateMoves fenString (Indexes (row, col)) =
-  if piece == ' ' || pieceIsNotCorrectSide
-    then []
-    else case toLower piece of
-      'p' -> generatePawnMove
-      'n' -> generateKnightMove
-      'b' -> generateBishopMove
-      'r' -> generateRookMove
-      'k' -> generateKingMove
-      'q' -> generateQueenMove
-      _ -> error "Invalid piece on the board."
+generateMoves :: Position -> String -> [Position]
+generateMoves (Algebraic pos) fenString =
+  generateMoves (convert $ Algebraic pos) fenString
+generateMoves (Indexes (row, col)) fenString =
+  filter (/= None) $
+    if piece == ' ' || pieceIsNotCorrectSide
+      then []
+      else case toLower piece of
+        'p' -> generatePawnMove
+        'n' -> generateKnightMove
+        'b' -> generateBishopMove
+        'r' -> generateRookMove
+        'k' -> generateKingMove
+        'q' -> generateQueenMove
+        _ -> error "Invalid piece on the board."
   where
     fen = parseFen fenString
     board = createBoard $ piecePlacement fen
@@ -80,8 +80,11 @@ generateMoves fenString (Indexes (row, col)) =
 
     iterator :: Position -> Int -> Int -> [Position]
     iterator (Indexes (r, c)) i j
-      | isWithinBoard (Indexes (r + i, c + j)) && isNotOccupied (Indexes (r + i, c + j)) = Indexes (r + i, c + j) : iterator (Indexes (r + i, c + j)) i j
-      | isOccupiedByEnemy (Indexes (r + i, c + j)) = [Indexes (r + i, c + j)]
+      | isWithinBoard (Indexes (r + i, c + j))
+          && isNotOccupied (Indexes (r + i, c + j)) =
+          convert (Indexes (r + i, c + j)) : iterator (Indexes (r + i, c + j)) i j
+      | isOccupiedByEnemy (Indexes (r + i, c + j)) =
+          [convert $ Indexes (r + i, c + j)]
       | otherwise = []
       where
         isWithinBoardAndNotOccupied (Indexes (r, c)) =
@@ -105,29 +108,28 @@ generateMoves fenString (Indexes (row, col)) =
 
         checkLeap :: [Position]
         checkLeap =
-          [ convert $ Indexes (row `op` 2, col)
-            | targetIsNotOccupied && isAtStartingPosition
-          ]
+          [convert pos | targetIsNotOccupied && isAtStartingPosition]
           where
+            pos = Indexes (row `op` 2, col)
             isWhiteAtStartingPosition = side == "w" && row == 6
             isBlackAtStartingPosition = side == "b" && row == 1
             isAtStartingPosition =
               isWhiteAtStartingPosition || isBlackAtStartingPosition
-            targetIsNotOccupied = not $ isOccupied $ Indexes (row `op` 2, col)
+            targetIsNotOccupied = not $ isOccupied pos
 
         checkAttackRight :: [Position]
         checkAttackRight =
-          [convert $ Indexes (row `op` 1, col + 1) | targetIsOccupiedByEnemy]
+          [convert pos | targetIsOccupiedByEnemy]
           where
-            targetIsOccupiedByEnemy =
-              isOccupiedByEnemy $ Indexes (row `op` 1, col + 1)
+            pos = Indexes (row `op` 1, col + 1)
+            targetIsOccupiedByEnemy = isOccupiedByEnemy pos
 
         checkAttackLeft :: [Position]
         checkAttackLeft =
-          [convert $ Indexes (row `op` 1, col - 1) | targetIsOccupiedByEnemy]
+          [convert pos | targetIsOccupiedByEnemy]
           where
-            targetIsOccupiedByEnemy =
-              isOccupiedByEnemy $ Indexes (row `op` 1, col - 1)
+            pos = Indexes (row `op` 1, col - 1)
+            targetIsOccupiedByEnemy = isOccupiedByEnemy pos
 
         checkEnPassant :: [Position]
         checkEnPassant
@@ -215,7 +217,6 @@ generateMoves fenString (Indexes (row, col)) =
         checkDown = iterator pos 1 0
         checkRight = iterator pos 0 1
 
-    -- TODO implement castling
     generateKingMove :: [Position]
     generateKingMove =
       checkUp
@@ -230,16 +231,16 @@ generateMoves fenString (Indexes (row, col)) =
         ++ checkKingSideCastle
       where
         checkQueenSideCastle =
-          let num | side == "w" = "8" | side == "b" = "1"
+          let num | side == "w" = "1" | side == "b" = "8"
               queenRight | side == "w" = 'Q' | side == "b" = 'q'
-           in [ Algebraic ('b' : num)
+           in [ Algebraic ('c' : num)
                 | queenRight `elem` castleRights
                     && isNotOccupied (Algebraic ('b' : num))
                     && isNotOccupied (Algebraic ('c' : num))
                     && isNotOccupied (Algebraic ('d' : num))
               ]
         checkKingSideCastle =
-          let num | side == "w" = "8" | side == "b" = "1"
+          let num | side == "w" = "1" | side == "b" = "8"
               kingRight | side == "w" = 'K' | side == "b" = 'k'
            in [ Algebraic ('g' : num)
                 | kingRight `elem` castleRights
@@ -311,7 +312,10 @@ generateMoves fenString (Indexes (row, col)) =
  - -}
 doMove :: Position -> Position -> String -> [String]
 doMove (Algebraic moving) (Algebraic target) fenString =
-  doMove (convert (Algebraic moving)) (convert (Algebraic target)) fenString
+  doMove
+    (convert (Algebraic moving))
+    (convert (Algebraic target))
+    fenString
 doMove
   (Indexes (movingRow, movingCol))
   (Indexes (targetRow, targetCol))
@@ -320,17 +324,18 @@ doMove
         error "Start or end is not within the bounds of the board."
     | otherwise = case toLower movingPiece of
         'p' -> doPawnMove
-        'n' -> []
-        'b' -> []
-        'r' -> []
-        'k' -> []
-        'q' -> []
+        'n' -> doKnightMove
+        'b' -> doBishopMove
+        'r' -> doRookMove
+        'k' -> doKingMove
+        'q' -> doQueenMove
         _ -> error "Invalid piece on the board."
     where
       movingSquare = Indexes (movingRow, movingCol)
       targetSquare = Indexes (targetRow, targetCol)
       fen = parseFen fenString
       board = createBoard $ piecePlacement fen
+      castleRights = castlingAbility fen
       side = sideToMove fen
       enPassant = enPassantTargetSquare fen
       movingPiece = board !! movingRow !! movingCol
@@ -340,6 +345,9 @@ doMove
       halfmove = halfmoveClock fen
       fullmove = fullmoveClock fen
       isCapture = targetPiece /= ' '
+      toSidesCase char
+        | side == "w" = toUpper char
+        | side == "b" = toLower char
       newFenBase =
         fen
           { sideToMove = if side == "w" then "b" else "w",
@@ -371,26 +379,41 @@ doMove
             | otherwise = False
 
           doPawnPromoMove :: [String]
-          doPawnPromoMove = []
+          doPawnPromoMove =
+            [ buildFen $ promoFenBase {piecePlacement = newPromoPiecePlacement 'q'},
+              buildFen $ promoFenBase {piecePlacement = newPromoPiecePlacement 'n'},
+              buildFen $ promoFenBase {piecePlacement = newPromoPiecePlacement 'r'},
+              buildFen $ promoFenBase {piecePlacement = newPromoPiecePlacement 'b'}
+            ]
+            where
+              promoFenBase = newFenBase {halfmoveClock = 0}
+              newPromoPiecePlacement :: Char -> String
+              newPromoPiecePlacement char =
+                toPiecePlacement $
+                  markBoard
+                    [(moving, ' '), (target, toSidesCase char)]
+                    board
 
           doEnPassantMove :: [String]
           doEnPassantMove =
             [ buildFen $
                 newFenBase
-                  { piecePlacement =
-                      toPiecePlacement $
-                        markBoard
-                          [ (moving, ' '),
-                            (target, movingPiece),
-                            ( convert $
-                                Indexes (targetRow `op` (-1), targetCol),
-                              ' '
-                            )
-                          ]
-                          board,
+                  { piecePlacement = enPassantPiecePlacement,
                     halfmoveClock = 0
                   }
             ]
+            where
+              enPassantPiecePlacement =
+                toPiecePlacement $
+                  markBoard
+                    [ (moving, ' '),
+                      (target, movingPiece),
+                      ( convert $
+                          Indexes (targetRow `op` (-1), targetCol),
+                        ' '
+                      )
+                    ]
+                    board
 
           doLeapMove :: [String]
           doLeapMove =
@@ -416,3 +439,116 @@ doMove
                     halfmoveClock = 0
                   }
             ]
+
+      doKnightMove :: [String]
+      doKnightMove =
+        [ buildFen $
+            newFenBase
+              { piecePlacement =
+                  toPiecePlacement $
+                    markBoard [(moving, ' '), (target, movingPiece)] board
+              }
+        ]
+
+      doBishopMove :: [String]
+      doBishopMove =
+        [ buildFen $
+            newFenBase
+              { piecePlacement =
+                  toPiecePlacement $
+                    markBoard [(moving, ' '), (target, movingPiece)] board
+              }
+        ]
+
+      doRookMove :: [String]
+      doRookMove =
+        [ buildFen $
+            newFenBase
+              { piecePlacement =
+                  toPiecePlacement $
+                    markBoard [(moving, ' '), (target, movingPiece)] board
+              }
+        ]
+
+      -- TODO Implement castling support
+      -- TODO Rebuild castlingAbility string
+      doKingMove :: [String]
+      doKingMove =
+        [ buildFen $
+            newFenBase
+              { piecePlacement = toPiecePlacement newBoard,
+                castlingAbility = newCastleRights
+              }
+        ]
+        where
+          isQueenSideWhiteCastleMove =
+            side == "w"
+              && 'Q' `elem` castleRights
+              && moving == Algebraic "e1"
+              && target == Algebraic "c1"
+          isQueenSideBlackCastleMove =
+            side == "b"
+              && 'q' `elem` castleRights
+              && moving == Algebraic "e8"
+              && target == Algebraic "c8"
+          isKingSideWhiteCastleMove =
+            side == "w"
+              && 'K' `elem` castleRights
+              && moving == Algebraic "e1"
+              && target == Algebraic "g1"
+          isKingSideBlackCastleMove =
+            side == "b"
+              && 'k' `elem` castleRights
+              && moving == Algebraic "e8"
+              && target == Algebraic "g8"
+          newCastleRights
+            | isQueenSideWhiteCastleMove || isKingSideWhiteCastleMove =
+                removeCastlingRight "QK" castleRights
+            | isQueenSideBlackCastleMove || isKingSideBlackCastleMove =
+                removeCastlingRight "qk" castleRights
+            | otherwise = castleRights
+          newBoard
+            | isQueenSideWhiteCastleMove =
+                markBoard
+                  [ (moving, ' '),
+                    (target, movingPiece),
+                    (Algebraic "a1", ' '),
+                    (Algebraic "d1", 'R')
+                  ]
+                  board
+            | isQueenSideBlackCastleMove =
+                markBoard
+                  [ (moving, ' '),
+                    (target, movingPiece),
+                    (Algebraic "h1", ' '),
+                    (Algebraic "f1", 'R')
+                  ]
+                  board
+            | isKingSideWhiteCastleMove =
+                markBoard
+                  [ (moving, ' '),
+                    (target, movingPiece),
+                    (Algebraic "a8", ' '),
+                    (Algebraic "d8", 'r')
+                  ]
+                  board
+            | isKingSideBlackCastleMove =
+                markBoard
+                  [ (moving, ' '),
+                    (target, movingPiece),
+                    (Algebraic "h8", ' '),
+                    (Algebraic "f8", 'r')
+                  ]
+                  board
+            | otherwise =
+                markBoard [(moving, ' '), (target, movingPiece)] board
+
+      doQueenMove :: [String]
+      doQueenMove =
+        [ buildFen $
+            newFenBase
+              { piecePlacement =
+                  toPiecePlacement $
+                    markBoard [(moving, ' '), (target, movingPiece)] board
+              }
+        ]
