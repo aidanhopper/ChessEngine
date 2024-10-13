@@ -8,6 +8,50 @@ import Utils
 isWithinBoard :: Position -> Bool
 isWithinBoard (Indexes (r, c)) = r >= 0 && c >= 0 && r < 8 && c < 8
 
+allPositions :: [Position]
+allPositions = [convert $ Indexes (i, j) | i <- [0 .. 7], j <- [0 .. 7]]
+
+attackablePositions :: String -> [Position]
+attackablePositions fenString = concatMap (`generateMoves` fenString) allPositions
+
+pieceAt :: String -> Position -> Maybe Char
+pieceAt fenString (Algebraic pos) = pieceAt fenString (convert (Algebraic pos))
+pieceAt fenString (Indexes (i, j))
+  | isWithinBoard (Indexes (i, j)) = Just piece
+  | otherwise = Nothing
+  where
+    piece = board !! i !! j
+    fen = parseFen fenString
+    board = createBoard $ piecePlacement fen
+
+piecePositions :: Char -> String -> [Position]
+piecePositions char fenString =
+  filter (\x -> pieceAt fenString x == Just char) allPositions
+
+generateSafeMoves :: Position -> String -> [Position]
+generateSafeMoves pos fenString =
+  filterSafeMoves pos fenString $ generateMoves pos fenString
+
+filterSafeMoves :: Position -> String -> [Position] -> [Position]
+filterSafeMoves moving fenString possibleMoves = out
+  where
+    fen = parseFen fenString
+    sideCase | sideToMove fen == "w" = toUpper | otherwise = toLower
+    performMove x = (x, head $ doMove moving x fenString)
+    getAttackablePositions x = (fst x, snd x, attackablePositions $ snd x)
+    movesThatPutKingInCheck (x, string, attackables) =
+      (x, head (piecePositions (sideCase 'k') string) `notElem` attackables)
+    badMove (x, putsKingInCheck) = putsKingInCheck
+    out =
+      map fst $
+        filter badMove $
+          map
+            ( movesThatPutKingInCheck
+                . getAttackablePositions
+                . performMove
+            )
+            possibleMoves
+
 {- Generates all possible moves given a fen string
  - and a input position.
  -
@@ -18,23 +62,28 @@ generateMoves (Algebraic pos) fenString =
   generateMoves (convert $ Algebraic pos) fenString
 generateMoves (Indexes (row, col)) fenString =
   filter (/= None) $
-    if piece == ' ' || pieceIsNotCorrectSide
-      then []
-      else case toLower piece of
-        'p' -> generatePawnMove
-        'n' -> generateKnightMove
-        'b' -> generateBishopMove
-        'r' -> generateRookMove
-        'k' -> generateKingMove
-        'q' -> generateQueenMove
-        _ -> error "Invalid piece on the board."
+    generateMovesHelper (Indexes (row, col)) fenString
   where
+    generateMovesHelper (Indexes (row, col)) fenString =
+      if piece == ' ' || pieceIsNotCorrectSide
+        then []
+        else case toLower piece of
+          'p' -> generatePawnMove
+          'n' -> generateKnightMove
+          'b' -> generateBishopMove
+          'r' -> generateRookMove
+          'k' -> generateKingMove
+          'q' -> generateQueenMove
+          _ -> error "Invalid piece on the board."
+
+    moving = Indexes (row, col)
     fen = parseFen fenString
     board = createBoard $ piecePlacement fen
     side = sideToMove fen
     piece = board !! row !! col
     enPassant = enPassantTargetSquare fen
     castleRights = castlingAbility fen
+
     pieceIsNotCorrectSide =
       not
         ( isUpper piece && side == "w"
@@ -466,12 +515,15 @@ doMove
             newFenBase
               { piecePlacement =
                   toPiecePlacement $
-                    markBoard [(moving, ' '), (target, movingPiece)] board
+                    markBoard [(moving, ' '), (target, movingPiece)] board,
+                castlingAbility = newCastleRights
               }
         ]
+        where
+          newCastleRights
+            | side == "w" = removeCastlingRight "QK" castleRights
+            | side == "b" = removeCastlingRight "qk" castleRights
 
-      -- TODO Implement castling support
-      -- TODO Rebuild castlingAbility string
       doKingMove :: [String]
       doKingMove =
         [ buildFen $
@@ -502,11 +554,8 @@ doMove
               && moving == Algebraic "e8"
               && target == Algebraic "g8"
           newCastleRights
-            | isQueenSideWhiteCastleMove || isKingSideWhiteCastleMove =
-                removeCastlingRight "QK" castleRights
-            | isQueenSideBlackCastleMove || isKingSideBlackCastleMove =
-                removeCastlingRight "qk" castleRights
-            | otherwise = castleRights
+            | side == "w" = removeCastlingRight "QK" castleRights
+            | side == "b" = removeCastlingRight "qk" castleRights
           newBoard
             | isQueenSideWhiteCastleMove =
                 markBoard
