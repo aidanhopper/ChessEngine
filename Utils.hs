@@ -10,6 +10,9 @@ import Fen
 data Position = Algebraic String | Indexes (Int, Int) | None
   deriving (Eq, Show)
 
+allPositions :: [Position]
+allPositions = [convert $ Indexes (i, j) | i <- [0 .. 7], j <- [0 .. 7]]
+
 createBoard :: String -> [String]
 createBoard str = reverse $ f str [""]
   where

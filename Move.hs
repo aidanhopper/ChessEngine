@@ -1,3 +1,4 @@
+
 module Move where
 
 import Data.Char
@@ -7,9 +8,6 @@ import Utils
 
 isWithinBoard :: Position -> Bool
 isWithinBoard (Indexes (r, c)) = r >= 0 && c >= 0 && r < 8 && c < 8
-
-allPositions :: [Position]
-allPositions = [convert $ Indexes (i, j) | i <- [0 .. 7], j <- [0 .. 7]]
 
 attackablePositions :: String -> [Position]
 attackablePositions fenString = concatMap (`generateMoves` fenString) allPositions
