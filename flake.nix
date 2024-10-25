@@ -18,10 +18,14 @@
             cabal-install
             haskell-language-server
             haskellPackages.HUnit
+            python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.HUnit
             ]))
-          ];
+          ] ++ (with pkgs.python312Packages; [
+            pip
+            pygame-ce
+          ]);
         };
       });
     };
