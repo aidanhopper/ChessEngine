@@ -9,7 +9,9 @@ import Test.HUnit
 import Tests
 import Utils
 import Game
+import Endpoints
 
 main :: IO ()
 main = do
   playGame
+  --runAPI
