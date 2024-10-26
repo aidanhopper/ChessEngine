@@ -5,8 +5,8 @@ import urllib.parse
 
 
 API_URL = 'http://localhost:8080'
-SCREEN_WIDTH = 512
-SCREEN_HEIGHT = 512
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 1024
 click_x, click_y = None, None
 mouse_x, mouse_y = 0, 0
 is_moving_piece = False
@@ -20,7 +20,7 @@ pygame.init()
 
 
 # Set up the display
-screen = pygame.display.set_mode((SCREEN_HEIGHT, SCREEN_WIDTH))  # Width: 800, Height: 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # Width: 800, Height: 600
 pygame.display.set_caption("Basic Pygame Window")
 
 
@@ -51,7 +51,13 @@ class Query:
         request = requests.get(url)
         request.raise_for_status()
         return request.json()
-
+    
+    def best_move(fen):
+        encoded_fen = Query.encode_fen(fen)
+        url = f'{API_URL}/bestmove/{encoded_fen}'
+        request = requests.get(url)
+        request.raise_for_status()
+        return request.json()
 
 class Piece:
     def __init__(self, char, row, col):
@@ -82,8 +88,7 @@ class Piece:
 
 class ChessBoard:
     def __init__(self):
-        #self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-        self.fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
     @staticmethod
     def to_algebraic_position(row, col):
@@ -109,12 +114,40 @@ class ChessBoard:
 
         return acol + arow
 
+    @staticmethod
+    def to_row_and_col_position(algebraic_position):
+
+        arow = algebraic_position[1]
+        acol = algebraic_position[0]
+
+        match arow:
+            case '8': row = 0
+            case '7': row = 1
+            case '6': row = 2
+            case '5': row = 3
+            case '4': row = 4
+            case '3': row = 5
+            case '2': row = 6
+            case '1': row = 7
+
+        match acol:
+            case 'a': col = 0
+            case 'b': col = 1
+            case 'c': col = 2
+            case 'd': col = 3
+            case 'e': col = 4
+            case 'f': col = 5
+            case 'g': col = 6
+            case 'h': col = 7
+
+        return row, col
 
     def draw(self):
-        self.drawBoard()
-        self.drawPieces()
+        self.draw_board()
+        self.draw_possible_moves()
+        self.draw_pieces()
 
-    def drawBoard(self):
+    def draw_board(self):
         for y in range(8):
             for x in range(8):
                 sector_x = x * (SCREEN_WIDTH//8)
@@ -129,10 +162,16 @@ class ChessBoard:
                     (sector_x, sector_y,SCREEN_WIDTH//8, SCREEN_HEIGHT//8)
                 )
 
-    def drawPieces(self):
-        split_fen = self.fen.split(' ')[0].split('/')
+    def draw_pieces(self):
+        global is_moving_piece
+        global moving
 
+        split_fen = self.fen.split(' ')[0].split('/')
         pieces = []
+        move_elem = None
+
+        if is_moving_piece:
+            moving_row, moving_col = ChessBoard.to_row_and_col_position(moving)
 
         for row in range(len(split_fen)):
             acc = 0
@@ -145,9 +184,37 @@ class ChessBoard:
                 else:
                     pieces.append(Piece(char, row, col + acc))
 
+                if is_moving_piece and moving_row == row and moving_col == col + acc:
+                    move_elem = len(pieces) - 1
+
+        # swap the moving elem and the last elem to draw correctly
+        if move_elem is not None:
+            tmp = pieces[move_elem]
+            pieces[move_elem] = pieces[-1]
+            pieces[-1] = tmp
 
         for piece in pieces:
             piece.draw()
+
+    def draw_possible_moves(self):
+        if is_moving_piece:
+            if self.possible_moves == None:
+                self.possible_moves = Query.possible_moves(self.fen, moving)
+
+            for move in self.possible_moves:
+                row, col = ChessBoard.to_row_and_col_position(move)
+
+                screen_x = col * SCREEN_WIDTH // 8 + SCREEN_WIDTH//32
+                screen_y = row * SCREEN_HEIGHT // 8 + SCREEN_HEIGHT//32
+
+                pygame.draw.rect(
+                    screen, (34, 139, 34),
+                    (screen_x, screen_y,SCREEN_WIDTH//16, SCREEN_HEIGHT//16)
+                )
+        else:
+            self.possible_moves = None
+
+                
         
 if __name__ == '__main__':
     running = True
@@ -175,7 +242,7 @@ if __name__ == '__main__':
                     new_fen = Query.do_move(board.fen, moving, target)
                     print(new_fen)
                     if new_fen != None:
-                        board.fen = new_fen[0]
+                        board.fen = Query.best_move(new_fen[0])
 
                     is_moving_piece = False
                     

@@ -1,9 +1,27 @@
 module Evaluate where
 
 import Data.Char
-import Fen
-import Utils
 import Debug.Trace
+import Fen
+import Move
+import Utils
+
+generateBestMove :: String -> String
+generateBestMove fenString = bestPosition
+  where
+    possiblePositions =
+      concat
+        $ concatMap
+          ( \(moving, targets) ->
+              map (\target -> doMove moving target fenString) targets
+          )
+        $ filter (\(_, targets) -> targets /= [])
+        $ map (\x -> (x, generateSafeMoves x fenString)) allPositions
+
+    evaluatedPositions =
+      map (\string -> (string, evaluate string "b")) possiblePositions
+
+    bestPosition = fst $ head evaluatedPositions
 
 evaluate :: String -> String -> Either Double String
 evaluate fenString sideToEvaluate
