@@ -9,6 +9,9 @@ import Utils
 generateBestMove :: String -> String
 generateBestMove fenString = bestPosition
   where
+    side = sideToMove $ parseFen fenString
+    mul | side == "w" = (*) (-1) | otherwise = (*) 1
+
     possiblePositions =
       concat
         $ concatMap
@@ -18,10 +21,23 @@ generateBestMove fenString = bestPosition
         $ filter (\(_, targets) -> targets /= [])
         $ map (\x -> (x, generateSafeMoves x fenString)) allPositions
 
+    evaluatedPositions :: [(String, Either Double String)]
     evaluatedPositions =
-      map (\string -> (string, evaluate string "b")) possiblePositions
+      map (\string -> (string, evaluate string side)) possiblePositions
 
-    bestPosition = fst $ head evaluatedPositions
+    bestEvalNum :: Double
+    bestEvalNum =
+      trace ("\n" ++ show (map snd evaluatedPositions) ++ "\n") f evaluatedPositions (mul 100000)
+      where
+        f :: [(String, Either Double String)] -> Double -> Double
+        f [] n = n
+        f ((_, Left num) : ps) n
+          | num < n = f ps num
+          | otherwise = f ps n
+        f ((_, Right _) : ps) n = f ps n
+
+    bestPosition =
+      fst $ head $ filter (\x -> snd x == Left bestEvalNum) evaluatedPositions
 
 evaluate :: String -> String -> Either Double String
 evaluate fenString sideToEvaluate
