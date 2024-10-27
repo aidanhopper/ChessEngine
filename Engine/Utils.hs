@@ -1,20 +1,264 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use isJust" #-}
 module Utils where
 
-import Data.Char
+import Data.Bits
+import Data.Char (digitToInt, isDigit)
+import Data.Either (isLeft, isRight)
+import Data.Word (Word64)
 import Debug.Trace
 import Fen
+import Text.Printf
 
-data Position = Algebraic String | Indexes (Int, Int) | None
-  deriving (Eq, Show)
+allSquares =
+  [ col : row
+    | row <- map show [8, 7 .. 1],
+      col <-
+        map
+          (\x -> toEnum x :: Char)
+          [fromEnum 'a' .. fromEnum 'h']
+  ]
 
-allPositions :: [Position]
-allPositions = [convert $ Indexes (i, j) | i <- [0 .. 7], j <- [0 .. 7]]
+type Bitboard = Word64
 
-createBoard :: String -> [String]
-createBoard str = reverse $ f str [""]
+type Square = String
+
+type ErrorString = String
+
+data Board = Board
+  { whiteKing :: Bitboard,
+    whiteQueens :: Bitboard,
+    whiteRooks :: Bitboard,
+    whiteBishops :: Bitboard,
+    whiteKnights :: Bitboard,
+    whitePawns :: Bitboard,
+    whitePieces :: Bitboard,
+    blackKing :: Bitboard,
+    blackQueens :: Bitboard,
+    blackRooks :: Bitboard,
+    blackBishops :: Bitboard,
+    blackKnights :: Bitboard,
+    blackPawns :: Bitboard,
+    blackPieces :: Bitboard,
+    allPieces :: Bitboard,
+    fen :: Fen
+  }
+
+showBitboard :: Bitboard -> String
+showBitboard b = pad $ printf "%b" b
+  where
+    pad str =
+      let padlen = 64 - length str in ['0' | x <- [1 .. padlen]] ++ str
+
+showPrettyBitboard :: Bitboard -> String
+showPrettyBitboard b = prettifyBitboardString
+  where
+    bstr = foldl (\acc x -> (x, length acc + 1) : acc) [] $ showBitboard b
+    prettifyBitboardString =
+      map (\x -> if x == '0' then '.' else x) $
+        foldl
+          ( \acc x ->
+              if snd x `mod` 8 == 0 && snd x /= 64 then fst x : '\n' : acc else fst x : acc
+          )
+          []
+          bstr
+
+instance Show Board where
+  show
+    ( Board
+        whiteKing
+        whiteQueens
+        whiteRooks
+        whiteBishops
+        whiteKnights
+        whitePawns
+        whitePieces
+        blackKing
+        blackQueens
+        blackRooks
+        blackBishops
+        blackKnights
+        blackPawns
+        blackPieces
+        allPieces
+        fen
+      ) =
+      "Board {whiteKing = "
+        ++ showBitboard whiteKing
+        ++ ", whiteQueens = "
+        ++ showBitboard whiteQueens
+        ++ ", whiteRooks = "
+        ++ showBitboard whiteRooks
+        ++ ", whiteBishops = "
+        ++ showBitboard whiteBishops
+        ++ ", whiteKnights = "
+        ++ showBitboard whiteKnights
+        ++ ", whitePawns = "
+        ++ showBitboard whitePawns
+        ++ ", whitePieces = "
+        ++ showBitboard whitePieces
+        ++ ", blackKing = "
+        ++ showBitboard blackKing
+        ++ ", blackQueens = "
+        ++ showBitboard blackQueens
+        ++ ", blackRooks = "
+        ++ showBitboard blackRooks
+        ++ ", blackBishops = "
+        ++ showBitboard blackBishops
+        ++ ", blackKnights = "
+        ++ showBitboard blackKnights
+        ++ ", blackPawns = "
+        ++ showBitboard blackPawns
+        ++ ", blackPieces = "
+        ++ showBitboard blackPieces
+        ++ ", allPieces = "
+        ++ showBitboard allPieces
+        ++ ", fen = "
+        ++ show fen
+
+data Move = Move
+  { startingSquare :: Square,
+    targetSquare :: Square
+  }
+  deriving (Show)
+
+emptyBoard =
+  Board
+    { whiteKing = 0,
+      whiteQueens = 0,
+      whiteRooks = 0,
+      whiteBishops = 0,
+      whiteKnights = 0,
+      whitePawns = 0,
+      whitePieces = 0,
+      blackKing = 0,
+      blackQueens = 0,
+      blackRooks = 0,
+      blackBishops = 0,
+      blackKnights = 0,
+      blackPawns = 0,
+      blackPieces = 0,
+      allPieces = 0,
+      fen = emptyFen
+    }
+
+pieceAt :: Square -> Board -> Either ErrorString Char
+pieceAt sqr board
+  | isLeft magicNumberBox = Left "Invalid square as input."
+  | isPopCountOne $ whiteKing board .&. magicNumber = Right 'K'
+  | isPopCountOne $ whiteQueens board .&. magicNumber = Right 'Q'
+  | isPopCountOne $ whiteRooks board .&. magicNumber = Right 'R'
+  | isPopCountOne $ whiteBishops board .&. magicNumber = Right 'B'
+  | isPopCountOne $ whiteKnights board .&. magicNumber = Right 'N'
+  | isPopCountOne $ whitePawns board .&. magicNumber = Right 'P'
+  | isPopCountOne $ blackKing board .&. magicNumber = Right 'k'
+  | isPopCountOne $ blackQueens board .&. magicNumber = Right 'q'
+  | isPopCountOne $ blackRooks board .&. magicNumber = Right 'r'
+  | isPopCountOne $ blackBishops board .&. magicNumber = Right 'b'
+  | isPopCountOne $ blackKnights board .&. magicNumber = Right 'n'
+  | isPopCountOne $ blackPawns board .&. magicNumber = Right 'p'
+  | otherwise = Right '.'
+  where
+    magicNumberBox = convert sqr
+    magicNumber = (\(Right x) -> x) magicNumberBox
+    isPopCountOne n = (==) 1 $ popCount n
+
+parseBoard :: FenString -> Either ErrorString Board
+parseBoard str = buildBoard (emptyBoard {fen = fen}) stringBoard 0
+  where
+    fen = parseFen str
+    stringBoard =
+      concat $ createPiecePositionStringBoard $ piecePlacement fen
+    buildBoard :: Board -> String -> Int -> Either ErrorString Board
+    buildBoard board [] _ = Right board
+    buildBoard board (c : cs) index
+      | isLeft magicNumberBox =
+          Left "Something went wrong with the magic number conversion in parseBoard."
+      | otherwise =
+          case c of
+            'K' ->
+              buildBoard
+                ( whiteBoard {whiteKing = whiteKing whiteBoard .|. magicNumber}
+                )
+                cs
+                (index + 1)
+            'Q' ->
+              buildBoard
+                (whiteBoard {whiteQueens = whiteQueens whiteBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'R' ->
+              buildBoard
+                (whiteBoard {whiteRooks = whiteRooks whiteBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'B' ->
+              buildBoard
+                (whiteBoard {whiteBishops = whiteBishops whiteBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'N' ->
+              buildBoard
+                (whiteBoard {whiteKnights = whiteKnights whiteBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'P' ->
+              buildBoard
+                (whiteBoard {whitePawns = whitePawns whiteBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'k' ->
+              buildBoard
+                (blackBoard {blackKing = blackPawns blackBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'q' ->
+              buildBoard
+                (blackBoard {blackQueens = blackQueens blackBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'r' ->
+              buildBoard
+                ( blackBoard {blackRooks = blackRooks blackBoard .|. magicNumber}
+                )
+                cs
+                (index + 1)
+            'b' ->
+              buildBoard
+                (blackBoard {blackBishops = blackBishops blackBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'n' ->
+              buildBoard
+                (blackBoard {blackKnights = blackKnights blackBoard .|. magicNumber})
+                cs
+                (index + 1)
+            'p' ->
+              buildBoard
+                (blackBoard {blackPawns = blackPawns blackBoard .|. magicNumber})
+                cs
+                (index + 1)
+            _ -> buildBoard board cs (index + 1)
+      where
+        col = case index `mod` 8 of
+          0 -> "h"
+          1 -> "g"
+          2 -> "f"
+          3 -> "e"
+          4 -> "d"
+          5 -> "c"
+          6 -> "b"
+          7 -> "a"
+        row = show (8 - (index `div` 8))
+        sqr = col ++ row
+
+        magicNumberBox = convert sqr
+        magicNumber = (\(Right x) -> x) magicNumberBox
+
+        allPiecesBoard = board {allPieces = allPieces board .|. magicNumber}
+        whiteBoard = allPiecesBoard {whitePieces = whitePieces board .|. magicNumber}
+        blackBoard = allPiecesBoard {blackPieces = blackPieces board .|. magicNumber}
+
+createPiecePositionStringBoard :: String -> [String]
+createPiecePositionStringBoard str = reverse $ f str [""]
   where
     f :: String -> [String] -> [String]
     f [] acc = acc
@@ -30,103 +274,39 @@ createBoard str = reverse $ f str [""]
                in " " ++ (g . head . show $ (num - 1))
           | otherwise = [x]
 
-printBoard :: [String] -> IO ()
-printBoard board = do
-  putStrLn $ "8 |" ++ addSpaces (head board)
-  putStrLn $ "7 |" ++ addSpaces (board !! 1)
-  putStrLn $ "6 |" ++ addSpaces (board !! 2)
-  putStrLn $ "5 |" ++ addSpaces (board !! 3)
-  putStrLn $ "4 |" ++ addSpaces (board !! 4)
-  putStrLn $ "3 |" ++ addSpaces (board !! 5)
-  putStrLn $ "2 |" ++ addSpaces (board !! 6)
-  putStrLn $ "1 |" ++ addSpaces (board !! 7)
-  putStrLn "   ---------------"
-  putStrLn "   a b c d e f g h"
-  return ()
+convert :: Square -> Either ErrorString Bitboard
+convert [col, row]
+  | not $ isDigit row = Left "Invalid row. Not a digit."
+  | digitToInt row <= 0 || digitToInt row > 8 =
+      Left ("Invalid row " ++ [col, row] ++ ". Out of bounds number.")
+  | otherwise =
+      case col of
+        'a' -> Right $ shiftL 0b1 shiftAmount
+        'b' -> Right $ shiftL 0b10 shiftAmount
+        'c' -> Right $ shiftL 0b100 shiftAmount
+        'd' -> Right $ shiftL 0b1000 shiftAmount
+        'e' -> Right $ shiftL 0b10000 shiftAmount
+        'f' -> Right $ shiftL 0b100000 shiftAmount
+        'g' -> Right $ shiftL 0b1000000 shiftAmount
+        'h' -> Right $ shiftL 0b10000000 shiftAmount
+        _ -> Left ("Invalid letter, input col was " ++ [col] ++ ".")
   where
-    addSpaces [] = []
-    addSpaces (c : cs) = c : ' ' : addSpaces cs
+    shiftAmount = (digitToInt row - 1) * 8
+convert _ = Left "Invalid, input must have a length of 2."
 
-convert :: Position -> Position
-convert (Algebraic target) = out
+convertIndex :: Int -> Square
+convertIndex index = col ++ row
   where
-    rowOut = row target
-    colOut = col target
-
-    out
-      | rowOut /= Nothing && colOut /= Nothing =
-          Indexes ((\(Just x) -> x) rowOut, (\(Just x) -> x) colOut)
-      | otherwise = None
-
-    col :: String -> Maybe Int
-    col [x, _] = case x of
-      'a' -> Just 0
-      'b' -> Just 1
-      'c' -> Just 2
-      'd' -> Just 3
-      'e' -> Just 4
-      'f' -> Just 5
-      'g' -> Just 6
-      'h' -> Just 7
-      _ -> Nothing
-    col _ = Nothing
-
-    row :: String -> Maybe Int
-    row [_, x] = Just $ 8 - (read [x] :: Int)
-    row _ = Nothing
-convert (Indexes (row, col)) = out
-  where
-    extract (Just x) = x
-    out
-      | getCol /= Nothing && getRow /= Nothing =
-          Algebraic $ extract getCol ++ extract getRow
-      | otherwise = None
-    getRow =
-      let num = 8 - row
-       in if num > 0 && num <= 8
-            then Just $ show num
-            else Nothing
-    getCol = case col of
-      0 -> Just "a"
-      1 -> Just "b"
-      2 -> Just "c"
-      3 -> Just "d"
-      4 -> Just "e"
-      5 -> Just "f"
-      6 -> Just "g"
-      7 -> Just "h"
-      _ -> Nothing
-
-markBoard :: [(Position, Char)] -> [String] -> [String]
-markBoard posList = f 0
-  where
-    posListIndexes :: [(Position, Char)]
-    posListIndexes = map h posList
-
-    h :: (Position, Char) -> (Position, Char)
-    h (Indexes (r, c), char) = (Indexes (r, c), char)
-    h (Algebraic pos, char) = (convert $ Algebraic pos, char)
-
-    getChar :: Position -> [(Position, Char)] -> Maybe Char
-    getChar _ [] = Nothing
-    getChar (Indexes (i, j)) ((Indexes (r, c), char) : xs) =
-      if r == i && c == j
-        then Just char
-        else getChar (Indexes (i, j)) xs
-
-    g :: Int -> Int -> String -> String
-    g _ _ [] = []
-    g i j (col : cols) =
-      if char /= Nothing
-        then extract char : g i (j + 1) cols
-        else col : g i (j + 1) cols
-      where
-        char = Indexes (i, j) `getChar` posListIndexes
-        extract (Just x) = x
-
-    f :: Int -> [String] -> [String]
-    f _ [] = []
-    f i (row : rows) = g i 0 row : f (i + 1) rows
+    col = case index `mod` 8 of
+      7 -> "a"
+      6 -> "b"
+      5 -> "c"
+      4 -> "d"
+      3 -> "e"
+      2 -> "f"
+      1 -> "g"
+      0 -> "h"
+    row = show ((index `div` 8) + 1)
 
 toPiecePlacement :: [String] -> String
 toPiecePlacement board =
@@ -145,7 +325,7 @@ toPiecePlacement board =
 printFenString :: String -> IO ()
 printFenString fenString = do
   let fen = parseFen fenString
-  let board = createBoard $ piecePlacement fen
+  let board = createPiecePositionStringBoard $ piecePlacement fen
   putStrLn $
     "8 |"
       ++ addSpaces (head board)

@@ -1,5 +1,9 @@
 module Fen where
 
+startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+type FenString = String
+
 data Fen = Fen
   { piecePlacement :: String,
     sideToMove :: String,
@@ -9,6 +13,17 @@ data Fen = Fen
     fullmoveClock :: Int
   }
   deriving (Show)
+
+emptyFen :: Fen
+emptyFen =
+  Fen
+    { piecePlacement = "",
+      sideToMove = "",
+      castlingAbility = "",
+      enPassantTargetSquare = "",
+      halfmoveClock = 0,
+      fullmoveClock = 0 
+    }
 
 parseFen :: String -> Fen
 parseFen str =

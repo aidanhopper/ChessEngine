@@ -1,18 +1,18 @@
 module Main where
 
-import Data.Char
-import Debug.Trace
-import Evaluate
-import Fen
 import Move
-import Test.HUnit
-import Tests
 import Utils
-import Game
-import Endpoints
+import Fen
+import Numeric (showIntAtBase)
+import Data.Char (intToDigit)
+import Data.Bits
+
+f = "8/8/8/8/p2p4/1PPP4/8/8 w KQkq - 0 1"
 
 main :: IO ()
 main = do
-  let pos = search startFen 5
-  --print pos
-  print $ length pos
+  let board = (\(Right x) -> x) $ parseBoard f
+  putStrLn $ showPrettyBitboard $ blackPawns board
+  putStrLn ""
+  print $ generatePawnPush board
+  return ()
