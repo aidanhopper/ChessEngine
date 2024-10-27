@@ -13,5 +13,6 @@ import Endpoints
 
 main :: IO ()
 main = do
-  playGame
-  --runAPI
+  let pos = search startFen 5
+  --print pos
+  print $ length pos

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+
 module Evaluate where
 
 import Data.Char
@@ -6,24 +8,31 @@ import Fen
 import Move
 import Utils
 
+allNextPossiblePositions fenString =
+  concat
+    $ concatMap
+      ( \(moving, targets) ->
+          map (\target -> doMove moving target fenString) targets
+      )
+    $ filter (\(_, targets) -> targets /= [])
+    $ map (\x -> (x, generateMoves x fenString)) allPositions
+
+search :: String -> Int -> [String]
+search fenString depth = helper [fenString] depth
+  where
+    helper :: [String] -> Int -> [String]
+    helper xs 0 = xs
+    helper xs depth = helper (concatMap allNextPossiblePositions xs) (depth - 1)
+
 generateBestMove :: String -> String
 generateBestMove fenString = bestPosition
   where
     side = sideToMove $ parseFen fenString
     mul | side == "w" = (*) (-1) | otherwise = (*) 1
 
-    possiblePositions =
-      concat
-        $ concatMap
-          ( \(moving, targets) ->
-              map (\target -> doMove moving target fenString) targets
-          )
-        $ filter (\(_, targets) -> targets /= [])
-        $ map (\x -> (x, generateSafeMoves x fenString)) allPositions
-
     evaluatedPositions :: [(String, Either Double String)]
     evaluatedPositions =
-      map (\string -> (string, evaluate string side)) possiblePositions
+      map (\string -> (string, evaluate string side)) $ allNextPossiblePositions fenString
 
     bestEvalNum :: Double
     bestEvalNum =
@@ -43,15 +52,9 @@ evaluate :: String -> String -> Either Double String
 evaluate fenString sideToEvaluate
   | sideToEvaluate /= "w" && sideToEvaluate /= "b" =
       Right "Invalid side as sideToEvaluate."
-  | otherwise =
-      Left $
-        200 * (wp - bp)
-          + 9 * (wq - wq)
-          + 5 * (wr - br)
-          + 3 * (wb - bb + wn - bn)
-          + wp
-          - bp
-          - 0.5 * (whiteDoubledPawns - blackDoubledPawns)
+  | isWhiteMated = Left 1000
+  | isBlackMated = Left (-1000)
+  | isDraw = Left 0
   where
     fen = parseFen fenString
     fenSide = sideToMove fen
@@ -108,3 +111,34 @@ evaluate fenString sideToEvaluate
                     then 1 + h (r + 1) c
                     else h (r + 1) c
               | otherwise = 0
+
+    isWhiteMated :: Bool
+    isWhiteMated
+      | sideToMove (parseFen fenString) /= "w" = False
+      | null (allNextPossiblePositions fenString) = True
+      | otherwise = False
+
+    isBlackMated :: Bool
+    isBlackMated
+      | sideToMove (parseFen fenString) /= "b" = False
+      | null (allNextPossiblePositions fenString) = True
+      | otherwise = False
+
+    isDraw :: Bool
+    isDraw = False
+
+    whiteMaterialScore :: Double
+    whiteMaterialScore = 0
+
+    blackMaterialScore :: Double
+    blackMaterialScore = 0
+
+    scoreMaterial :: Char -> Double
+    scoreMaterial piece =
+      case toLower piece of
+        'p' -> 0
+        'n' -> 0
+        'b' -> 0
+        'r' -> 0
+        'k' -> 0
+        'q' -> 0
