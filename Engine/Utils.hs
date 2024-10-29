@@ -116,9 +116,26 @@ instance Show Board where
 
 data Move = Move
   { startingSquare :: Square,
-    targetSquare :: Square
+    targetSquare :: Square,
+    flags :: Flags
   }
   deriving (Show)
+
+data Flags = Flags
+  { isDoublePawnPush :: Bool,
+    isCapture :: Bool,
+    castleRightsToRemove :: String,
+    isEnPassant :: Bool
+  }
+  deriving (Show)
+
+emptyFlags =
+  Flags
+    { isDoublePawnPush = False,
+      isCapture = False,
+      castleRightsToRemove = "",
+      isEnPassant = False
+    }
 
 emptyBoard =
   Board
@@ -248,7 +265,7 @@ parseBoard str = buildBoard (emptyBoard {fen = fen}) stringBoard 0
           6 -> "b"
           7 -> "a"
         row = show (8 - (index `div` 8))
-        sqr = col ++ row
+        sqr = convertIndex index
 
         magicNumberBox = convert sqr
         magicNumber = (\(Right x) -> x) magicNumberBox
@@ -281,14 +298,14 @@ convert [col, row]
       Left ("Invalid row " ++ [col, row] ++ ". Out of bounds number.")
   | otherwise =
       case col of
-        'a' -> Right $ shiftL 0b1 shiftAmount
-        'b' -> Right $ shiftL 0b10 shiftAmount
-        'c' -> Right $ shiftL 0b100 shiftAmount
-        'd' -> Right $ shiftL 0b1000 shiftAmount
-        'e' -> Right $ shiftL 0b10000 shiftAmount
-        'f' -> Right $ shiftL 0b100000 shiftAmount
-        'g' -> Right $ shiftL 0b1000000 shiftAmount
-        'h' -> Right $ shiftL 0b10000000 shiftAmount
+        'h' -> Right $ shiftL 0b1 shiftAmount
+        'g' -> Right $ shiftL 0b10 shiftAmount
+        'f' -> Right $ shiftL 0b100 shiftAmount
+        'e' -> Right $ shiftL 0b1000 shiftAmount
+        'd' -> Right $ shiftL 0b10000 shiftAmount
+        'c' -> Right $ shiftL 0b100000 shiftAmount
+        'b' -> Right $ shiftL 0b1000000 shiftAmount
+        'a' -> Right $ shiftL 0b10000000 shiftAmount
         _ -> Left ("Invalid letter, input col was " ++ [col] ++ ".")
   where
     shiftAmount = (digitToInt row - 1) * 8
@@ -298,15 +315,15 @@ convertIndex :: Int -> Square
 convertIndex index = col ++ row
   where
     col = case index `mod` 8 of
-      7 -> "a"
-      6 -> "b"
-      5 -> "c"
-      4 -> "d"
-      3 -> "e"
-      2 -> "f"
-      1 -> "g"
-      0 -> "h"
-    row = show ((index `div` 8) + 1)
+      7 -> "h"
+      6 -> "g"
+      5 -> "g"
+      4 -> "e"
+      3 -> "d"
+      2 -> "c"
+      1 -> "b"
+      0 -> "a"
+    row = show (8 - index `div` 8)
 
 toPiecePlacement :: [String] -> String
 toPiecePlacement board =

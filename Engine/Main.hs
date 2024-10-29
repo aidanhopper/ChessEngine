@@ -1,18 +1,19 @@
 module Main where
 
-import Move
-import Utils
-import Fen
-import Numeric (showIntAtBase)
-import Data.Char (intToDigit)
 import Data.Bits
+import Data.Char (intToDigit)
+import Fen
+import Move
+import Numeric (showIntAtBase)
+import Utils
 
-f = "8/8/8/8/p2p4/1PPP4/8/8 w KQkq - 0 1"
+f = "8/8/8/8/8/8/7P/8 w KQkq - 0 1"
 
 main :: IO ()
 main = do
   let board = (\(Right x) -> x) $ parseBoard f
-  putStrLn $ showPrettyBitboard $ blackPawns board
-  putStrLn ""
-  print $ generatePawnPush board
+  -- putStrLn $ showPrettyBitboard $ blackPawns board
+  -- putStrLn ""
+  let moves = generatePseudoLegalMoves board
+  print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare)) moves
   return ()
