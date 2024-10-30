@@ -1,6 +1,8 @@
 module Move where
 
+import Control.Debounce (trailingEdge)
 import Data.Bits
+import Data.Word (Word64)
 import Debug.Trace
 import Fen
 import Utils
@@ -57,46 +59,26 @@ getRankMask activeSide
   | activeSide == "w" = rankFiveMask
   | activeSide == "b" = rankFourMask
 
--- Thinking of adding a empty pieces bitboard to the arguments
--- to check for captures. So moves will be generated such that
--- captures and non-capture moves are included in the bitboard.
--- Captures can then be tested using a bitwise AND with the
--- empty piecs argument.
-constructMoves :: (Int -> Int) -> Flags -> Bitboard -> [Move]
-constructMoves toStartingIndex flags bb
-  | bb == 0 = []
-  | otherwise =
-      Move
-        { startingSquare = startingSqr,
-          targetSquare = targetSqr,
-          flags = flags
-        }
-        : constructMoves toStartingIndex flags (bb `clearBit` index)
-  where
-    index = countTrailingZeros bb
-    startingSqr = trace ("\n\n" ++ show index ++ "\n\n") convertIndex $ toStartingIndex index
-    targetSqr = convertIndex index
-
 generatePawnMoves :: Board -> [Move]
 generatePawnMoves board =
-  constructMoves (\x -> x - forward) emptyFlags singlePushes
-    ++ constructMoves
+  constructPawnMoves (\x -> x - forward) emptyFlags singlePushes
+    ++ constructPawnMoves
       (\x -> x - forward * 2)
       (emptyFlags {isDoublePawnPush = True})
       doublePushes
-    ++ constructMoves
+    ++ constructPawnMoves
       (\x -> x - east)
       (emptyFlags {isCapture = True})
       eastAttacks
-    ++ constructMoves
+    ++ constructPawnMoves
       (\x -> x - west)
       (emptyFlags {isCapture = True})
       westAttacks
-    ++ constructMoves
+    ++ constructPawnMoves
       (\x -> x - west)
       (emptyFlags {isCapture = True, isEnPassant = True})
       enPassantAttackWest
-    ++ constructMoves
+    ++ constructPawnMoves
       (\x -> x - east)
       (emptyFlags {isCapture = True, isEnPassant = True})
       enPassantAttackEast
@@ -171,16 +153,29 @@ generatePawnMoves board =
             )
             forward
 
+    constructPawnMoves :: (Int -> Int) -> Flags -> Bitboard -> [Move]
+    constructPawnMoves toStartingIndex flags bb
+      | bb == 0 = []
+      | otherwise =
+          Move
+            { startingSquare = startingSqr,
+              targetSquare = targetSqr,
+              flags = flags
+            }
+            : constructPawnMoves toStartingIndex flags (bb `clearBit` index)
+      where
+        index = countTrailingZeros bb
+        startingSqr = convertIndex $ toStartingIndex index
+        targetSqr = convertIndex index
+
 generateKnightMoves :: Board -> [Move]
 generateKnightMoves board =
-  trace
-    (showPrettyBitboard $ knightMask .|. (\(Right x) -> x) (convert "f3"))
-    []
+  constructKnightMoves activeKnights
   where
     activeSide = sideToMove $ fen board
     emptySquares = complement $ allPieces board
     knightMask = 0xa1100110a
-    knightMaskCenterSquare = "f3"
+    knightMaskIndex = 18
 
     west = 1
     east = -1
@@ -199,9 +194,61 @@ generateKnightMoves board =
       | activeSide == "w" = whitePieces board
       | otherwise = blackPieces board
 
+    constructKnightMoves :: Bitboard -> [Move]
+    constructKnightMoves bb
+      | bb == 0 = []
+      | otherwise =
+          processPiece knightMoves
+            ++ constructKnightMoves (bb .&. complement singleKnight)
+      where
+        index = countTrailingZeros bb
+        singleKnight = bit index
+        shiftAmount = index - knightMaskIndex
+
+        fileABCMask = fileAMask .|. fileBMask .|. fileCMask
+        fileFGHMask = fileFMask .|. fileGMask .|. fileHMask
+
+        -- Check if index is in columns a, b, or c. If so clear columns f, g, h.
+
+        -- move the knight mask
+        knightMoves =
+          shift knightMask shiftAmount
+            .&. fileMask
+            .&. complement activePieces
+          where
+            fileMask
+              | popCount (singleKnight .&. fileABCMask) == 1 =
+                  complement fileFGHMask
+              | popCount (singleKnight .&. fileFGHMask) == 1 =
+                  complement fileABCMask
+              | otherwise = 1
+
+        startingSqr = convertIndex index
+
+        processPiece :: Bitboard -> [Move]
+        processPiece bb
+          | bb == 0 = []
+          | otherwise =
+              Move
+                { startingSquare = startingSqr,
+                  targetSquare = targetSqr,
+                  flags =
+                    emptyFlags
+                      { isCapture =
+                          popCount (bit targetIndex .&. inactivePieces) == 1
+                      }
+                }
+                : processPiece (bb `clearBit` targetIndex)
+          where
+            targetIndex = countTrailingZeros bb
+            targetSqr = convertIndex targetIndex
+
+generateSlidingMove :: Board -> [Move]
+generateSlidingMove board = []
+
 -- naming is done as ... first moves two squares, second moves one square
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
   generatePawnMoves board
-    -- ++ generateKnightMoves board
+    ++ generateKnightMoves board

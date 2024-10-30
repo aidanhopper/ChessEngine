@@ -256,16 +256,16 @@ parseBoard str = buildBoard (emptyBoard {fen = fen}) stringBoard 0
             _ -> buildBoard board cs (index + 1)
       where
         col = case index `mod` 8 of
-          0 -> "h"
-          1 -> "g"
-          2 -> "f"
-          3 -> "e"
-          4 -> "d"
-          5 -> "c"
-          6 -> "b"
-          7 -> "a"
+          0 -> "a"
+          1 -> "b"
+          2 -> "c"
+          3 -> "d"
+          4 -> "e"
+          5 -> "f"
+          6 -> "g"
+          7 -> "h"
         row = show (8 - (index `div` 8))
-        sqr = convertIndex index
+        sqr = col ++ row
 
         magicNumberBox = convert sqr
         magicNumber = (\(Right x) -> x) magicNumberBox
@@ -315,15 +315,15 @@ convertIndex :: Int -> Square
 convertIndex index = col ++ row
   where
     col = case index `mod` 8 of
-      7 -> "h"
-      6 -> "g"
-      5 -> "g"
-      4 -> "e"
-      3 -> "d"
-      2 -> "c"
-      1 -> "b"
-      0 -> "a"
-    row = show (8 - index `div` 8)
+      7 -> "a"
+      6 -> "b"
+      5 -> "c"
+      4 -> "d"
+      3 -> "e"
+      2 -> "f"
+      1 -> "g"
+      0 -> "h"
+    row = show (index `div` 8 + 1)
 
 toPiecePlacement :: [String] -> String
 toPiecePlacement board =
