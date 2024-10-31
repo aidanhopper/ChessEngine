@@ -39,7 +39,11 @@ data Board = Board
     blackPawns :: Bitboard,
     blackPieces :: Bitboard,
     allPieces :: Bitboard,
-    fen :: Fen
+    sideToMove :: String,
+    castleRights :: String,
+    enPassantTarget :: String,
+    halfmoveClock :: Int,
+    fullmoveClock :: Int
   }
 
 showBitboard :: Bitboard -> String
@@ -79,7 +83,11 @@ instance Show Board where
         blackPawns
         blackPieces
         allPieces
-        fen
+        sideToMove
+        castleRights
+        enPassantTarget
+        halfmoveClock
+        fullmoveClock
       ) =
       "Board {whiteKing = "
         ++ showBitboard whiteKing
@@ -111,8 +119,17 @@ instance Show Board where
         ++ showBitboard blackPieces
         ++ ", allPieces = "
         ++ showBitboard allPieces
-        ++ ", fen = "
-        ++ show fen
+        ++ ", sideToMove = "
+        ++ sideToMove
+        ++ ", castleRights = "
+        ++ castleRights
+        ++ ", enPassantTarget = "
+        ++ enPassantTarget
+        ++ ", halfmoveClock = "
+        ++ show halfmoveClock
+        ++ ", fullmoveClock = "
+        ++ show fullmoveClock
+        ++ "}"
 
 data Move = Move
   { startingSquare :: Square,
@@ -125,7 +142,9 @@ data Flags = Flags
   { isDoublePawnPush :: Bool,
     isCapture :: Bool,
     castleRightsToRemove :: String,
-    isEnPassant :: Bool
+    isEnPassant :: Bool,
+    isQueenSideCastle :: Bool,
+    isKingSideCastle :: Bool
   }
   deriving (Show)
 
@@ -134,7 +153,9 @@ emptyFlags =
     { isDoublePawnPush = False,
       isCapture = False,
       castleRightsToRemove = "",
-      isEnPassant = False
+      isEnPassant = False,
+      isQueenSideCastle = False,
+      isKingSideCastle = False
     }
 
 emptyBoard =
@@ -154,7 +175,11 @@ emptyBoard =
       blackPawns = 0,
       blackPieces = 0,
       allPieces = 0,
-      fen = emptyFen
+      sideToMove = "",
+      enPassantTarget = "",
+      castleRights = "",
+      halfmoveClock = 0,
+      fullmoveClock = 0
     }
 
 pieceAt :: Square -> Board -> Either ErrorString Char
@@ -179,11 +204,22 @@ pieceAt sqr board
     isPopCountOne n = (==) 1 $ popCount n
 
 parseBoard :: FenString -> Either ErrorString Board
-parseBoard str = buildBoard (emptyBoard {fen = fen}) stringBoard 0
+parseBoard str =
+  buildBoard
+    ( emptyBoard
+        { sideToMove = sideToMoveFen fen,
+          castleRights = castlingAbilityFen fen,
+          enPassantTarget = enPassantTargetSquareFen fen,
+          halfmoveClock = halfmoveClockFen fen,
+          fullmoveClock = fullmoveClockFen fen
+        }
+    )
+    stringBoard
+    0
   where
     fen = parseFen str
     stringBoard =
-      concat $ createPiecePositionStringBoard $ piecePlacement fen
+      concat $ createPiecePositionStringBoard $ piecePlacementFen fen
     buildBoard :: Board -> String -> Int -> Either ErrorString Board
     buildBoard board [] _ = Right board
     buildBoard board (c : cs) index
@@ -342,32 +378,32 @@ toPiecePlacement board =
 printFenString :: String -> IO ()
 printFenString fenString = do
   let fen = parseFen fenString
-  let board = createPiecePositionStringBoard $ piecePlacement fen
+  let board = createPiecePositionStringBoard $ piecePlacementFen fen
   putStrLn $
     "8 |"
       ++ addSpaces (head board)
       ++ "  side to move      "
-      ++ sideToMove fen
+      ++ sideToMoveFen fen
   putStrLn $
     "7 |"
       ++ addSpaces (board !! 1)
       ++ "  castling ability  "
-      ++ castlingAbility fen
+      ++ castlingAbilityFen fen
   putStrLn $
     "6 |"
       ++ addSpaces (board !! 2)
       ++ "  enpassant square  "
-      ++ enPassantTargetSquare fen
+      ++ enPassantTargetSquareFen fen
   putStrLn $
     "5 |"
       ++ addSpaces (board !! 3)
       ++ "  halfmove clock    "
-      ++ show (halfmoveClock fen)
+      ++ show (halfmoveClockFen fen)
   putStrLn $
     "4 |"
       ++ addSpaces (board !! 4)
       ++ "  fullmove clock    "
-      ++ show (fullmoveClock fen)
+      ++ show (fullmoveClockFen fen)
   putStrLn $ "3 |" ++ addSpaces (board !! 5)
   putStrLn $ "2 |" ++ addSpaces (board !! 6)
   putStrLn $ "1 |" ++ addSpaces (board !! 7)

@@ -5,36 +5,36 @@ startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 type FenString = String
 
 data Fen = Fen
-  { piecePlacement :: String,
-    sideToMove :: String,
-    castlingAbility :: String,
-    enPassantTargetSquare :: String,
-    halfmoveClock :: Int,
-    fullmoveClock :: Int
+  { piecePlacementFen :: String,
+    sideToMoveFen :: String,
+    castlingAbilityFen :: String,
+    enPassantTargetSquareFen :: String,
+    halfmoveClockFen :: Int,
+    fullmoveClockFen :: Int
   }
   deriving (Show)
 
 emptyFen :: Fen
 emptyFen =
   Fen
-    { piecePlacement = "",
-      sideToMove = "",
-      castlingAbility = "",
-      enPassantTargetSquare = "",
-      halfmoveClock = 0,
-      fullmoveClock = 0
+    { piecePlacementFen = "",
+      sideToMoveFen = "",
+      castlingAbilityFen = "",
+      enPassantTargetSquareFen = "",
+      halfmoveClockFen = 0,
+      fullmoveClockFen = 0
     }
 
 parseFen :: String -> Fen
 parseFen str =
   let parsedFen = split ' ' str
    in Fen
-        { piecePlacement = head parsedFen,
-          sideToMove = parsedFen !! 1,
-          castlingAbility = parsedFen !! 2,
-          enPassantTargetSquare = parsedFen !! 3,
-          halfmoveClock = read (parsedFen !! 4) :: Int,
-          fullmoveClock = read (parsedFen !! 5) :: Int
+        { piecePlacementFen = head parsedFen,
+          sideToMoveFen = parsedFen !! 1,
+          castlingAbilityFen = parsedFen !! 2,
+          enPassantTargetSquareFen = parsedFen !! 3,
+          halfmoveClockFen = read (parsedFen !! 4) :: Int,
+          fullmoveClockFen = read (parsedFen !! 5) :: Int
         }
   where
     split delim [] = [""]
@@ -46,17 +46,17 @@ parseFen str =
 
 buildFen :: Fen -> String
 buildFen fen =
-  piecePlacement fen
+  piecePlacementFen fen
     ++ " "
-    ++ sideToMove fen
+    ++ sideToMoveFen fen
     ++ " "
-    ++ castlingAbility fen
+    ++ castlingAbilityFen fen
     ++ " "
-    ++ enPassantTargetSquare fen
+    ++ enPassantTargetSquareFen fen
     ++ " "
-    ++ show (halfmoveClock fen)
+    ++ show (halfmoveClockFen fen)
     ++ " "
-    ++ show (fullmoveClock fen)
+    ++ show (fullmoveClockFen fen)
 
 removeCastlingRight :: String -> String -> String
 removeCastlingRight chars rights

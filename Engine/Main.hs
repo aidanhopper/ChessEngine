@@ -7,7 +7,7 @@ import Move
 import Numeric (showIntAtBase)
 import Utils
 
-f = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1"
+f = "rnbqkbnr/pppppppp/8/8/8/8/8/R3K1PR w KQkq - 0 1"
 
 main :: IO ()
 main = do
@@ -16,6 +16,6 @@ main = do
   -- putStrLn ""
   printFenString f
   let moves = generatePseudoLegalMoves board
-  print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare)) moves
+  print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare, flags)) moves
   --print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare, flags)) moves
   return ()

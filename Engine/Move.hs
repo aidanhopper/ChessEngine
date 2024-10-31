@@ -83,9 +83,9 @@ generatePawnMoves board =
       (emptyFlags {isCapture = True, isEnPassant = True})
       enPassantAttackEast
   where
-    activeSide = sideToMove $ fen board
+    activeSide = sideToMove board
     emptySquares = complement $ allPieces board
-    enPassantTarget = enPassantTargetSquare $ fen board
+    enPassantTargetSquare = enPassantTarget board
 
     activePawns
       | activeSide == "w" = whitePawns board
@@ -111,8 +111,8 @@ generatePawnMoves board =
       | activeSide == "w" = 9
       | otherwise = -9
 
-    enPassantTargetRankMask = getRankMask enPassantTarget
-    enPassantTargetFileMask = getFileMask enPassantTarget
+    enPassantTargetRankMask = getRankMask enPassantTargetSquare
+    enPassantTargetFileMask = getFileMask enPassantTargetSquare
 
     singlePushes :: Bitboard
     singlePushes = emptySquares .&. shift activePawns forward
@@ -131,7 +131,7 @@ generatePawnMoves board =
 
     enPassantAttackWest :: Bitboard
     enPassantAttackWest
-      | enPassantTarget == "-" = 0
+      | enPassantTargetSquare == "-" = 0
       | otherwise =
           shift
             ( shiftL activePawns 1
@@ -143,7 +143,7 @@ generatePawnMoves board =
 
     enPassantAttackEast :: Bitboard
     enPassantAttackEast
-      | enPassantTarget == "-" = 0
+      | enPassantTargetSquare == "-" = 0
       | otherwise =
           shift
             ( shiftR activePawns 1
@@ -157,22 +157,21 @@ generatePawnMoves board =
     constructPawnMoves toStartingIndex flags bb
       | bb == 0 = []
       | otherwise =
-          Move
-            { startingSquare = startingSqr,
-              targetSquare = targetSqr,
-              flags = flags
-            }
-            : constructPawnMoves toStartingIndex flags (bb `clearBit` index)
-      where
-        index = countTrailingZeros bb
-        startingSqr = convertIndex $ toStartingIndex index
-        targetSqr = convertIndex index
+          let index = countTrailingZeros bb
+              startingSqr = convertIndex $ toStartingIndex index
+              targetSqr = convertIndex index
+           in Move
+                { startingSquare = startingSqr,
+                  targetSquare = targetSqr,
+                  flags = flags
+                }
+                : constructPawnMoves toStartingIndex flags (bb `clearBit` index)
 
 generateKnightMoves :: Board -> [Move]
 generateKnightMoves board =
   constructKnightMoves activeKnights
   where
-    activeSide = sideToMove $ fen board
+    activeSide = sideToMove board
     emptySquares = complement $ allPieces board
     knightMask = 0xa1100110a
     knightMaskIndex = 18
@@ -221,24 +220,24 @@ generateKnightMoves board =
         processPiece bb
           | bb == 0 = []
           | otherwise =
-              Move
-                { startingSquare = startingSqr,
-                  targetSquare = targetSqr,
-                  flags =
-                    emptyFlags
-                      { isCapture =
-                          popCount (bit targetIndex .&. inactivePieces) == 1
-                      }
-                }
-                : processPiece (bb `clearBit` targetIndex)
-          where
-            targetIndex = countTrailingZeros bb
-            targetSqr = convertIndex targetIndex
+              let targetIndex = countTrailingZeros bb
+                  targetSqr = convertIndex targetIndex
+               in Move
+                    { startingSquare = startingSqr,
+                      targetSquare = targetSqr,
+                      flags =
+                        emptyFlags
+                          { isCapture =
+                              popCount (bit targetIndex .&. inactivePieces) == 1
+                          }
+                    }
+                    : processPiece (bb `clearBit` targetIndex)
 
 generateKingMoves :: Board -> [Move]
 generateKingMoves board =
-  trace (showPrettyBitboard regularKingMoves) $
-    constructRegularKingMoves regularKingMoves
+  constructRegularKingMoves regularKingMoves
+    ++ constructQueenSideCastleMove
+    ++ constructKingSideCastleMove
   where
     kingMoveMask =
       ( bit 8
@@ -252,7 +251,7 @@ generateKingMoves board =
       ) ::
         Bitboard
 
-    activeSide = sideToMove $ fen board
+    activeSide = sideToMove board
     emptySquares = complement $ allPieces board
 
     index = countTrailingZeros activeKing
@@ -271,31 +270,95 @@ generateKingMoves board =
 
     regularKingMoves = shift kingMoveMask (-9 + index) .&. complement activePieces
 
+    constructKingSideCastleMove :: [Move]
+    constructKingSideCastleMove
+      | not isKingSideCastleAvailable = []
+      | otherwise =
+          [ Move
+              { startingSquare =
+                  case activeSide of
+                    "w" -> "e1"
+                    "b" -> "e8",
+                targetSquare =
+                  case activeSide of
+                    "w" -> "g1"
+                    "b" -> "g8",
+                flags =
+                  emptyFlags
+                    { isKingSideCastle = True,
+                      castleRightsToRemove =
+                        case activeSide of
+                          "w" -> "KQ"
+                          "b" -> "kq"
+                    }
+              }
+          ]
+      where
+        isKingSideCastleAvailable =
+          activeSide == "w" && 'K' `elem` castleRights board && squaresAreEmpty
+            || activeSide == "b" && 'k' `elem` castleRights board && squaresAreEmpty
+        rankMask | activeSide == "w" = rankOneMask | otherwise = rankEightMask
+        fileMask = fileFMask .|. fileGMask
+        squaresAreEmpty =
+          popCount (rankMask .&. fileMask .&. emptySquares) == 2
+
+    constructQueenSideCastleMove :: [Move]
+    constructQueenSideCastleMove
+      | not isQueenSideCastleAvailable = []
+      | otherwise =
+          [ Move
+              { startingSquare =
+                  case activeSide of
+                    "w" -> "e1"
+                    "b" -> "e8",
+                targetSquare =
+                  case activeSide of
+                    "w" -> "c1"
+                    "b" -> "c8",
+                flags =
+                  emptyFlags
+                    { isQueenSideCastle = True,
+                      castleRightsToRemove =
+                        case activeSide of
+                          "w" -> "KQ"
+                          "b" -> "kq"
+                    }
+              }
+          ]
+      where
+        isQueenSideCastleAvailable =
+          activeSide == "w" && 'Q' `elem` castleRights board && squaresAreEmpty
+            || activeSide == "b" && 'q' `elem` castleRights board && squaresAreEmpty
+        rankMask | activeSide == "w" = rankOneMask | otherwise = rankEightMask
+        fileMask = fileBMask .|. fileCMask .|. fileDMask
+        squaresAreEmpty =
+          popCount (rankMask .&. fileMask .&. emptySquares) == 3
+
     constructRegularKingMoves :: Bitboard -> [Move]
     constructRegularKingMoves bb
       | bb == 0 = []
       | otherwise =
-          Move
-            { startingSquare = convertIndex index,
-              targetSquare = targetSqr,
-              flags =
-                emptyFlags
-                  { castleRightsToRemove = "KQkq",
-                    isCapture =
-                      popCount
-                        (bit targetIndex .&. inactivePieces)
-                        == 1
-                  }
-            }
-            : constructRegularKingMoves (bb `clearBit` targetIndex)
-      where
-        targetIndex = countTrailingZeros bb
-        targetSqr = convertIndex targetIndex
+          let targetIndex = countTrailingZeros bb
+              targetSqr = convertIndex targetIndex
+           in Move
+                { startingSquare = convertIndex index,
+                  targetSquare = targetSqr,
+                  flags =
+                    emptyFlags
+                      { castleRightsToRemove =
+                          case activeSide of
+                            "w" -> "KQ"
+                            "b" -> "kq",
+                        isCapture =
+                          popCount
+                            (bit targetIndex .&. inactivePieces)
+                            == 1
+                      }
+                }
+                : constructRegularKingMoves (bb `clearBit` targetIndex)
 
 generateSlidingMove :: Board -> [Move]
 generateSlidingMove board = []
-
--- naming is done as ... first moves two squares, second moves one square
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
