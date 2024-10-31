@@ -177,11 +177,6 @@ generateKnightMoves board =
     knightMask = 0xa1100110a
     knightMaskIndex = 18
 
-    west = 1
-    east = -1
-    north = 8
-    south = -8
-
     activeKnights
       | activeSide == "w" = whiteKnights board
       | otherwise = blackKnights board
@@ -208,9 +203,6 @@ generateKnightMoves board =
         fileABCMask = fileAMask .|. fileBMask .|. fileCMask
         fileFGHMask = fileFMask .|. fileGMask .|. fileHMask
 
-        -- Check if index is in columns a, b, or c. If so clear columns f, g, h.
-
-        -- move the knight mask
         knightMoves =
           shift knightMask shiftAmount
             .&. fileMask
@@ -243,6 +235,63 @@ generateKnightMoves board =
             targetIndex = countTrailingZeros bb
             targetSqr = convertIndex targetIndex
 
+generateKingMoves :: Board -> [Move]
+generateKingMoves board =
+  trace (showPrettyBitboard regularKingMoves) $
+    constructRegularKingMoves regularKingMoves
+  where
+    kingMoveMask =
+      ( bit 8
+          .|. bit 10
+          .|. bit 0
+          .|. bit 1
+          .|. bit 2
+          .|. bit 16
+          .|. bit 17
+          .|. bit 18
+      ) ::
+        Bitboard
+
+    activeSide = sideToMove $ fen board
+    emptySquares = complement $ allPieces board
+
+    index = countTrailingZeros activeKing
+
+    activeKing
+      | activeSide == "w" = whiteKing board
+      | otherwise = blackKing board
+
+    inactivePieces
+      | activeSide == "w" = blackPieces board
+      | otherwise = whitePieces board
+
+    activePieces
+      | activeSide == "w" = whitePieces board
+      | otherwise = blackPieces board
+
+    regularKingMoves = shift kingMoveMask (-9 + index) .&. complement activePieces
+
+    constructRegularKingMoves :: Bitboard -> [Move]
+    constructRegularKingMoves bb
+      | bb == 0 = []
+      | otherwise =
+          Move
+            { startingSquare = convertIndex index,
+              targetSquare = targetSqr,
+              flags =
+                emptyFlags
+                  { castleRightsToRemove = "KQkq",
+                    isCapture =
+                      popCount
+                        (bit targetIndex .&. inactivePieces)
+                        == 1
+                  }
+            }
+            : constructRegularKingMoves (bb `clearBit` targetIndex)
+      where
+        targetIndex = countTrailingZeros bb
+        targetSqr = convertIndex targetIndex
+
 generateSlidingMove :: Board -> [Move]
 generateSlidingMove board = []
 
@@ -252,3 +301,4 @@ generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
   generatePawnMoves board
     ++ generateKnightMoves board
+    ++ generateKingMoves board

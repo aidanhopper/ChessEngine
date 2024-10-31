@@ -22,7 +22,7 @@ emptyFen =
       castlingAbility = "",
       enPassantTargetSquare = "",
       halfmoveClock = 0,
-      fullmoveClock = 0 
+      fullmoveClock = 0
     }
 
 parseFen :: String -> Fen
