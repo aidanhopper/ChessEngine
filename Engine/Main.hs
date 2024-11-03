@@ -7,7 +7,7 @@ import Move
 import Numeric (showIntAtBase)
 import Utils
 
-f = "rnbqkbnr/pppppppp/8/8/8/8/8/R3K1PR w KQkq - 0 1"
+f = "rnbqkbnr/ppp1ppp1/8/3R4/2R5/8/8/4K3 w KQkq - 0 1"
 
 printBitboard :: Bitboard -> IO ()
 printBitboard bb = do
@@ -22,20 +22,22 @@ printBitboards (bb : bbs) = do
 main :: IO ()
 main = do
   let board = (\(Right x) -> x) $ parseBoard f
-  let index = 27
+  -- let index = 27
+  --
+  -- putStrLn $ "The blocker mask for index " ++ show index
+  -- let blockerMask = orthogonalBlockerMask index
+  -- printBitboard blockerMask 
+  --
+  -- let allBlockers = allBlockerBitboards blockerMask
+  -- putStrLn $ "One of the possible blocker masks for index " ++ show index
+  -- let blocker = allBlockers !! 430
+  -- printBitboard blocker
+  --
+  --
+  -- putStrLn "The resulting movement mask"
+  -- let moveMask = getOrthogonalMovesBitboard index blocker
+  -- printBitboard moveMask
 
-  putStrLn $ "The blocker mask for index " ++ show index
-  let blockerMask = orthogonalBlockerMask index
-  printBitboard blockerMask 
-
-  let allBlockers = allBlockerBitboards blockerMask
-  putStrLn $ "One of the possible blocker masks for index " ++ show index
-  let blocker = allBlockers !! 430
-  printBitboard blocker
-
-  
-  putStrLn "The resulting movement mask"
-  let moveMask = getOrthogonalMovesBitboard index blocker
-  printBitboard moveMask
+  printBitboards $ concatMap (allBlockerBitboards . diagonalBlockerMask) [0..63]
 
   return ()

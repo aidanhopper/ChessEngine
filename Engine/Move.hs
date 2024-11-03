@@ -1,11 +1,16 @@
 module Move where
 
 import Control.Monad
+import Data.Array
 import Data.Bits
 import Data.Word (Word64)
 import Debug.Trace
 import Fen
 import Utils
+
+orthogonalBlockerMasks = listArray (0, 63) $ map orthogonalBlockerMask [0 .. 63]
+
+diagonalBlockerMasks = listArray (0, 63) $ map diagonalBlockerMask [0 .. 63]
 
 orthogonalBlockerMask index = croppedRankMask .^. croppedFileMask
   where
@@ -15,6 +20,31 @@ orthogonalBlockerMask index = croppedRankMask .^. croppedFileMask
     croppedFileMask =
       (fileMask index .&. complement rankOneMask .&. complement rankEightMask)
         .&. complement (bit index)
+
+diagonalBlockerMask index =
+  rayNorthWest
+    .|. raySouthEast
+    .|. rayNorthEast
+    .|. raySouthWest
+  where
+    ray :: Int -> Int -> Bitboard -> Bitboard -> Bitboard
+    ray i step stopMask acc
+      | i + step < 0 = acc
+      | i + step > 63 = acc
+      | popCount (stopMask .&. bit (i + step)) == 1 = acc
+      | otherwise =
+          ray
+            (i + step)
+            step
+            stopMask
+            (acc .|. bit (i + step))
+
+    squareMask = fileAMask .|. fileHMask .|. rankOneMask .|. rankEightMask
+
+    rayNorthWest = ray index 9 squareMask 0
+    raySouthEast = ray index (-9) squareMask 0
+    rayNorthEast = ray index 7 squareMask 0
+    raySouthWest = ray index (-7) squareMask 0
 
 allBlockerBitboards :: Bitboard -> [Bitboard]
 allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
@@ -37,6 +67,7 @@ allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
           | x == '0' = helper moveSqrIndices xs bb
           | otherwise = helper moveSqrIndices xs (bb .|. bit moveSqr)
 
+-- Expects the blocker bitboard to conform to the orthogonal blocker mask
 getOrthogonalMovesBitboard :: Int -> Bitboard -> Bitboard
 getOrthogonalMovesBitboard index blockerBitboard =
   rayEast .|. rayWest .|. rayNorth .|. raySouth
@@ -386,11 +417,32 @@ generateKingMoves board =
                 }
                 : constructRegularKingMoves (bb `clearBit` targetIndex)
 
-generateSlidingMove :: Board -> [Move]
-generateSlidingMove board = []
+generateRookMoves :: Board -> [Move]
+generateRookMoves board = trace (showPrettyBitboard moves) []
+  where
+    activeSide = sideToMove board
+    emptySquares = complement $ allPieces board
+
+    index = countTrailingZeros activeRooks
+
+    activeRooks
+      | activeSide == "w" = whiteRooks board
+      | otherwise = blackKing board
+
+    inactivePieces
+      | activeSide == "w" = blackPieces board
+      | otherwise = whitePieces board
+
+    activePieces
+      | activeSide == "w" = whitePieces board
+      | otherwise = blackPieces board
+
+    blockerMask = allPieces board .&. orthogonalBlockerMasks ! index
+    moves = getOrthogonalMovesBitboard index blockerMask .&. complement activePieces
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
-  generatePawnMoves board
-    ++ generateKnightMoves board
-    ++ generateKingMoves board
+  -- generatePawnMoves board
+  -- ++ generateKnightMoves board
+  -- ++ generateKingMoves board
+  generateRookMoves board
