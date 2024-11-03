@@ -8,6 +8,78 @@ import Debug.Trace
 import Fen
 import Text.Printf
 
+rankOneMask :: Bitboard
+rankOneMask = 0xff
+
+rankTwoMask :: Bitboard
+rankTwoMask = 0xff00
+
+rankThreeMask :: Bitboard
+rankThreeMask = 0xff0000
+
+rankFourMask :: Bitboard
+rankFourMask = 0xff000000
+
+rankFiveMask :: Bitboard
+rankFiveMask = 0xff00000000
+
+rankSixMask :: Bitboard
+rankSixMask = 0xff0000000000
+
+rankSevenMask :: Bitboard
+rankSevenMask = 0xff000000000000
+
+rankEightMask :: Bitboard
+rankEightMask = 0xff00000000000000
+
+ranks :: [Bitboard]
+ranks =
+  [ rankOneMask,
+    rankTwoMask,
+    rankThreeMask,
+    rankFourMask,
+    rankFiveMask,
+    rankSixMask,
+    rankSevenMask,
+    rankEightMask
+  ]
+
+fileHMask :: Bitboard
+fileHMask = 0x0101010101010101
+
+fileGMask :: Bitboard
+fileGMask = 0x202020202020202
+
+fileFMask :: Bitboard
+fileFMask = 0x404040404040404
+
+fileEMask :: Bitboard
+fileEMask = 0x808080808080808
+
+fileDMask :: Bitboard
+fileDMask = 0x1010101010101010
+
+fileCMask :: Bitboard
+fileCMask = 0x2020202020202020
+
+fileBMask :: Bitboard
+fileBMask = 0x4040404040404040
+
+fileAMask :: Bitboard
+fileAMask = 0x8080808080808080
+
+files :: [Bitboard]
+files =
+  [ fileAMask,
+    fileBMask,
+    fileCMask,
+    fileDMask,
+    fileEMask,
+    fileFMask,
+    fileGMask,
+    fileHMask
+  ]
+
 allSquares =
   [ col : row
     | row <- map show [8, 7 .. 1],
@@ -16,6 +88,28 @@ allSquares =
           (\x -> toEnum x :: Char)
           [fromEnum 'a' .. fromEnum 'h']
   ]
+
+fileMask index =
+  case index `mod` 8 of
+    0 -> fileHMask
+    1 -> fileGMask
+    2 -> fileFMask
+    3 -> fileEMask
+    4 -> fileDMask
+    5 -> fileCMask
+    6 -> fileBMask
+    7 -> fileAMask
+
+rankMask index =
+  case index `div` 8 of
+    0 -> rankOneMask
+    1 -> rankTwoMask
+    2 -> rankThreeMask
+    3 -> rankFourMask
+    4 -> rankFiveMask
+    5 -> rankSixMask
+    6 -> rankSevenMask
+    7 -> rankEightMask
 
 type Bitboard = Word64
 

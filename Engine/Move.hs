@@ -1,63 +1,43 @@
 module Move where
 
-import Control.Debounce (trailingEdge)
+import Control.Monad
 import Data.Bits
 import Data.Word (Word64)
 import Debug.Trace
 import Fen
 import Utils
 
-rankOneMask = 0xff
+orthogonalBlockerMask index = croppedRankMask .^. croppedFileMask
+  where
+    croppedRankMask =
+      (rankMask index .&. complement fileHMask .&. complement fileAMask)
+        .&. complement (bit index)
+    croppedFileMask =
+      (fileMask index .&. complement rankOneMask .&. complement rankEightMask)
+        .&. complement (bit index)
 
-rankTwoMask = 0xff00
+allBlockerBitboards :: Bitboard -> [Bitboard]
+allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
+  where
+    moveSquareIndices = helper movementMask []
+      where
+        helper bb acc
+          | bb == 0 = acc
+          | otherwise =
+              let index = countTrailingZeros bb
+               in helper (bb `clearBit` index) (index : acc)
 
-rankThreeMask = 0xff0000
+    patterns = replicateM (length moveSquareIndices) "01"
 
-rankFourMask = 0xff000000
+    applyMoveSquareIndices pattern = helper moveSquareIndices pattern 0
+      where
+        helper [] _ bb = bb
+        helper _ [] bb = bb
+        helper (moveSqr : moveSqrIndices) (x : xs) bb
+          | x == '0' = helper moveSqrIndices xs bb
+          | otherwise = helper moveSqrIndices xs (bb .|. bit moveSqr)
 
-rankFiveMask = 0xff00000000
-
-rankSixMask = 0xff0000000000
-
-rankSevenMask = 0xff000000000000
-
-rankEightMask = 0xff00000000000000
-
-fileHMask = 0x0101010101010101
-
-fileGMask = 0x202020202020202
-
-fileFMask = 0x404040404040404
-
-fileEMask = 0x808080808080808
-
-fileDMask = 0x1010101010101010
-
-fileCMask = 0x2020202020202020
-
-fileBMask = 0x4040404040404040
-
-fileAMask = 0x8080808080808080
-
--- Moves will now be generated all at once using bitwise operators.
--- This should be a lot faster.
-
-getFileMask :: Square -> Bitboard
-getFileMask sqr =
-  case head sqr of
-    'a' -> fileAMask
-    'b' -> fileBMask
-    'c' -> fileCMask
-    'd' -> fileDMask
-    'e' -> fileEMask
-    'f' -> fileFMask
-    'g' -> fileGMask
-    'h' -> fileHMask
-
-getRankMask :: Square -> Bitboard
-getRankMask activeSide
-  | activeSide == "w" = rankFiveMask
-  | activeSide == "b" = rankFourMask
+orthogonalBlockerInformation movementMask = movementMask
 
 generatePawnMoves :: Board -> [Move]
 generatePawnMoves board =
@@ -110,6 +90,23 @@ generatePawnMoves board =
     west
       | activeSide == "w" = 9
       | otherwise = -9
+
+    getFileMask :: Square -> Bitboard
+    getFileMask sqr =
+      case head sqr of
+        'a' -> fileAMask
+        'b' -> fileBMask
+        'c' -> fileCMask
+        'd' -> fileDMask
+        'e' -> fileEMask
+        'f' -> fileFMask
+        'g' -> fileGMask
+        'h' -> fileHMask
+
+    getRankMask :: Square -> Bitboard
+    getRankMask activeSide
+      | activeSide == "w" = rankFiveMask
+      | activeSide == "b" = rankFourMask
 
     enPassantTargetRankMask = getRankMask enPassantTargetSquare
     enPassantTargetFileMask = getFileMask enPassantTargetSquare
@@ -239,17 +236,16 @@ generateKingMoves board =
     ++ constructQueenSideCastleMove
     ++ constructKingSideCastleMove
   where
+    kingMoveMask :: Bitboard
     kingMoveMask =
-      ( bit 8
-          .|. bit 10
-          .|. bit 0
-          .|. bit 1
-          .|. bit 2
-          .|. bit 16
-          .|. bit 17
-          .|. bit 18
-      ) ::
-        Bitboard
+      bit 8
+        .|. bit 10
+        .|. bit 0
+        .|. bit 1
+        .|. bit 2
+        .|. bit 16
+        .|. bit 17
+        .|. bit 18
 
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
