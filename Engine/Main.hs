@@ -9,13 +9,33 @@ import Utils
 
 f = "rnbqkbnr/pppppppp/8/8/8/8/8/R3K1PR w KQkq - 0 1"
 
+printBitboard :: Bitboard -> IO ()
+printBitboard bb = do
+  putStrLn $ showPrettyBitboard bb ++ "\n"
+
+printBitboards :: [Bitboard] -> IO ()
+printBitboards [] = return ()
+printBitboards (bb : bbs) = do
+  printBitboard bb
+  printBitboards bbs
+
 main :: IO ()
 main = do
   let board = (\(Right x) -> x) $ parseBoard f
-  -- putStrLn $ showPrettyBitboard $ blackPawns board
-  -- putStrLn ""
-  printFenString f
-  let moves = generatePseudoLegalMoves board
-  print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare, flags)) moves
-  --print $ map (\(Move startingSquare targetSquare flags) -> (startingSquare, targetSquare, flags)) moves
+  let index = 27
+
+  putStrLn $ "The blocker mask for index " ++ show index
+  let blockerMask = orthogonalBlockerMask index
+  printBitboard blockerMask 
+
+  let allBlockers = allBlockerBitboards blockerMask
+  putStrLn $ "One of the possible blocker masks for index " ++ show index
+  let blocker = allBlockers !! 430
+  printBitboard blocker
+
+  
+  putStrLn "The resulting movement mask"
+  let moveMask = getOrthogonalMovesBitboard index blocker
+  printBitboard moveMask
+
   return ()

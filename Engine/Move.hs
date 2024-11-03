@@ -37,7 +37,40 @@ allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
           | x == '0' = helper moveSqrIndices xs bb
           | otherwise = helper moveSqrIndices xs (bb .|. bit moveSqr)
 
-orthogonalBlockerInformation movementMask = movementMask
+getOrthogonalMovesBitboard :: Int -> Bitboard -> Bitboard
+getOrthogonalMovesBitboard index blockerBitboard =
+  rayEast .|. rayWest .|. rayNorth .|. raySouth
+  where
+    file = fileMask index
+    rank = rankMask index
+    movementMask = rank .^. file
+
+    west = 1
+    east = -1
+    north = 8
+    south = -8
+
+    ray :: Int -> Int -> Bitboard -> Bitboard -> Bitboard
+    ray i step stopMask acc
+      | i + step < 0 = acc
+      | i + step > 63 = acc
+      | popCount (stopMask .&. bit (i + step)) == 1 = acc .|. bit (i + step)
+      | popCount targetBit == 0 =
+          ray
+            (i + step)
+            step
+            stopMask
+            (acc .|. bit (i + step))
+      | popCount targetBit == 1 = acc .|. targetBit
+      where
+        targetBit = bit (i + step) .&. blockerBitboard
+
+    -- draw a ray from the starting index until it hits the first 1
+    -- include the 1 it hits in the output bitboard
+    rayWest = ray index west fileAMask 0
+    rayEast = ray index east fileHMask 0
+    rayNorth = ray index north 0 0
+    raySouth = ray index south 0 0
 
 generatePawnMoves :: Board -> [Move]
 generatePawnMoves board =
