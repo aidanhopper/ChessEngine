@@ -7,7 +7,7 @@ import Move
 import Numeric (showIntAtBase)
 import Utils
 
-f = "rnbqkbnr/ppp1ppp1/8/3R4/2R5/8/8/4K3 w KQkq - 0 1"
+f = "1nbqkbnr/2p2p2/8/3B4/8/8/R7/3K3q w KQkq - 0 1"
 
 printBitboard :: Bitboard -> IO ()
 printBitboard bb = do
@@ -26,7 +26,7 @@ main = do
   --
   -- putStrLn $ "The blocker mask for index " ++ show index
   -- let blockerMask = orthogonalBlockerMask index
-  -- printBitboard blockerMask 
+  -- printBitboard blockerMask
   --
   -- let allBlockers = allBlockerBitboards blockerMask
   -- putStrLn $ "One of the possible blocker masks for index " ++ show index
@@ -37,7 +37,6 @@ main = do
   -- putStrLn "The resulting movement mask"
   -- let moveMask = getOrthogonalMovesBitboard index blocker
   -- printBitboard moveMask
-
-  printBitboards $ concatMap (allBlockerBitboards . diagonalBlockerMask) [0..63]
-
+  let moves = generatePseudoLegalMoves board
+  print moves
   return ()

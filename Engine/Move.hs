@@ -8,9 +8,9 @@ import Debug.Trace
 import Fen
 import Utils
 
-orthogonalBlockerMasks = listArray (0, 63) $ map orthogonalBlockerMask [0 .. 63]
+orthogonalBlockerMasks = listArray (0, 64) $ map orthogonalBlockerMask [0 .. 63]
 
-diagonalBlockerMasks = listArray (0, 63) $ map diagonalBlockerMask [0 .. 63]
+diagonalBlockerMasks = listArray (0, 64) $ map diagonalBlockerMask [0 .. 63]
 
 orthogonalBlockerMask index = croppedRankMask .^. croppedFileMask
   where
@@ -39,12 +39,12 @@ diagonalBlockerMask index =
             stopMask
             (acc .|. bit (i + step))
 
-    squareMask = fileAMask .|. fileHMask .|. rankOneMask .|. rankEightMask
+    outerSquareMask = fileAMask .|. fileHMask .|. rankOneMask .|. rankEightMask
 
-    rayNorthWest = ray index 9 squareMask 0
-    raySouthEast = ray index (-9) squareMask 0
-    rayNorthEast = ray index 7 squareMask 0
-    raySouthWest = ray index (-7) squareMask 0
+    rayNorthWest = ray index 9 outerSquareMask 0
+    raySouthEast = ray index (-9) outerSquareMask 0
+    rayNorthEast = ray index 7 outerSquareMask 0
+    raySouthWest = ray index (-7) outerSquareMask 0
 
 allBlockerBitboards :: Bitboard -> [Bitboard]
 allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
@@ -69,7 +69,7 @@ allBlockerBitboards movementMask = map applyMoveSquareIndices patterns
 
 -- Expects the blocker bitboard to conform to the orthogonal blocker mask
 getOrthogonalMovesBitboard :: Int -> Bitboard -> Bitboard
-getOrthogonalMovesBitboard index blockerBitboard =
+getOrthogonalMovesBitboard index blockers =
   rayEast .|. rayWest .|. rayNorth .|. raySouth
   where
     file = fileMask index
@@ -94,7 +94,7 @@ getOrthogonalMovesBitboard index blockerBitboard =
             (acc .|. bit (i + step))
       | popCount targetBit == 1 = acc .|. targetBit
       where
-        targetBit = bit (i + step) .&. blockerBitboard
+        targetBit = bit (i + step) .&. blockers
 
     -- draw a ray from the starting index until it hits the first 1
     -- include the 1 it hits in the output bitboard
@@ -102,6 +102,32 @@ getOrthogonalMovesBitboard index blockerBitboard =
     rayEast = ray index east fileHMask 0
     rayNorth = ray index north 0 0
     raySouth = ray index south 0 0
+
+getDiagonalMovesBitboard :: Int -> Bitboard -> Bitboard
+getDiagonalMovesBitboard index blockers =
+  rayNorthWest .|. rayNorthEast .|. raySouthWest .|. raySouthEast
+  where
+    ray :: Int -> Int -> Bitboard -> Bitboard -> Bitboard
+    ray i step stopMask acc
+      | i + step < 0 = acc
+      | i + step > 63 = acc
+      | popCount (stopMask .&. bit (i + step)) == 1 = acc .|. bit (i + step)
+      | popCount targetBit == 0 =
+          ray
+            (i + step)
+            step
+            stopMask
+            (acc .|. bit (i + step))
+      | popCount targetBit == 1 = acc .|. targetBit
+      where
+        targetBit = bit (i + step) .&. blockers
+
+    outerSquareMask = fileAMask .|. fileHMask .|. rankOneMask .|. rankEightMask
+
+    rayNorthWest = ray index 9 outerSquareMask 0
+    rayNorthEast = ray index 7 outerSquareMask 0
+    raySouthWest = ray index (-7) outerSquareMask 0
+    raySouthEast = ray index (-9) outerSquareMask 0
 
 generatePawnMoves :: Board -> [Move]
 generatePawnMoves board =
@@ -418,7 +444,9 @@ generateKingMoves board =
                 : constructRegularKingMoves (bb `clearBit` targetIndex)
 
 generateRookMoves :: Board -> [Move]
-generateRookMoves board = trace (showPrettyBitboard moves) []
+generateRookMoves board
+  | activeRooks == 0 = []
+  | otherwise = trace (showPrettyBitboard moves) []
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -437,12 +465,38 @@ generateRookMoves board = trace (showPrettyBitboard moves) []
       | activeSide == "w" = whitePieces board
       | otherwise = blackPieces board
 
-    blockerMask = allPieces board .&. orthogonalBlockerMasks ! index
-    moves = getOrthogonalMovesBitboard index blockerMask .&. complement activePieces
+    blockers = allPieces board .&. orthogonalBlockerMasks ! index
+    moves = getOrthogonalMovesBitboard index blockers .&. complement activePieces
+
+generateBishopMoves :: Board -> [Move]
+generateBishopMoves board
+  | activeBishops == 0 = []
+  | otherwise = trace (showPrettyBitboard moves) []
+  where
+    activeSide = sideToMove board
+    emptySquares = complement $ allPieces board
+
+    index = countTrailingZeros activeBishops
+
+    activeBishops
+      | activeSide == "w" = whiteBishops board
+      | otherwise = blackBishops board
+
+    inactivePieces
+      | activeSide == "w" = blackPieces board
+      | otherwise = whitePieces board
+
+    activePieces
+      | activeSide == "w" = whitePieces board
+      | otherwise = blackPieces board
+
+    blockers = allPieces board .&. diagonalBlockerMasks ! index
+    moves = getDiagonalMovesBitboard index blockers .&. complement activePieces
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
   -- generatePawnMoves board
   -- ++ generateKnightMoves board
   -- ++ generateKingMoves board
-  generateRookMoves board
+  -- ++ generateRookMoves board
+  generateBishopMoves board
