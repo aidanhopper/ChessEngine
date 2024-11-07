@@ -226,8 +226,8 @@ instance Show Board where
         ++ "}"
 
 data Move = Move
-  { startingSquare :: Square,
-    targetSquare :: Square,
+  { startingIndex :: Int,
+    targetIndex :: Int,
     flags :: Flags
   }
   deriving (Show)

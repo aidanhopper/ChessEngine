@@ -37,6 +37,7 @@ main = do
   -- putStrLn "The resulting movement mask"
   -- let moveMask = getOrthogonalMovesBitboard index blocker
   -- printBitboard moveMask
-  let moves = generatePseudoLegalMoves board
-  print moves
+
+  print $ map (\(Move startingIndex targetIndex flags) -> (convertIndex startingIndex, convertIndex targetIndex)) $ generatePseudoLegalMoves board
+
   return ()

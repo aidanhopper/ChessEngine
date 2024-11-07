@@ -245,11 +245,9 @@ generatePawnMoves board =
       | bb == 0 = []
       | otherwise =
           let index = countTrailingZeros bb
-              startingSqr = convertIndex $ toStartingIndex index
-              targetSqr = convertIndex index
            in Move
-                { startingSquare = startingSqr,
-                  targetSquare = targetSqr,
+                { startingIndex = toStartingIndex index,
+                  targetIndex = index,
                   flags = flags
                 }
                 : constructPawnMoves toStartingIndex flags (bb `clearBit` index)
@@ -301,17 +299,14 @@ generateKnightMoves board =
                   complement fileABCMask
               | otherwise = 1
 
-        startingSqr = convertIndex index
-
         processPiece :: Bitboard -> [Move]
         processPiece bb
           | bb == 0 = []
           | otherwise =
               let targetIndex = countTrailingZeros bb
-                  targetSqr = convertIndex targetIndex
                in Move
-                    { startingSquare = startingSqr,
-                      targetSquare = targetSqr,
+                    { startingIndex = index,
+                      targetIndex = targetIndex,
                       flags =
                         emptyFlags
                           { isCapture =
@@ -361,14 +356,14 @@ generateKingMoves board =
       | not isKingSideCastleAvailable = []
       | otherwise =
           [ Move
-              { startingSquare =
+              { startingIndex =
                   case activeSide of
-                    "w" -> "e1"
-                    "b" -> "e8",
-                targetSquare =
+                    "w" -> 3
+                    "b" -> 59,
+                targetIndex =
                   case activeSide of
-                    "w" -> "g1"
-                    "b" -> "g8",
+                    "w" -> 1
+                    "b" -> 57,
                 flags =
                   emptyFlags
                     { isKingSideCastle = True,
@@ -381,8 +376,16 @@ generateKingMoves board =
           ]
       where
         isKingSideCastleAvailable =
-          activeSide == "w" && 'K' `elem` castleRights board && squaresAreEmpty
-            || activeSide == "b" && 'k' `elem` castleRights board && squaresAreEmpty
+          activeSide == "w"
+            && countTrailingZeros activeKing == 3
+            && 'K'
+              `elem` castleRights board
+            && squaresAreEmpty
+            || activeSide == "b"
+              && countTrailingZeros activeKing == 59
+              && 'k'
+                `elem` castleRights board
+              && squaresAreEmpty
         rankMask | activeSide == "w" = rankOneMask | otherwise = rankEightMask
         fileMask = fileFMask .|. fileGMask
         squaresAreEmpty =
@@ -393,14 +396,14 @@ generateKingMoves board =
       | not isQueenSideCastleAvailable = []
       | otherwise =
           [ Move
-              { startingSquare =
+              { startingIndex =
                   case activeSide of
-                    "w" -> "e1"
-                    "b" -> "e8",
-                targetSquare =
+                    "w" -> 3
+                    "b" -> 59,
+                targetIndex =
                   case activeSide of
-                    "w" -> "c1"
-                    "b" -> "c8",
+                    "w" -> 5
+                    "b" -> 61,
                 flags =
                   emptyFlags
                     { isQueenSideCastle = True,
@@ -425,10 +428,9 @@ generateKingMoves board =
       | bb == 0 = []
       | otherwise =
           let targetIndex = countTrailingZeros bb
-              targetSqr = convertIndex targetIndex
            in Move
-                { startingSquare = convertIndex index,
-                  targetSquare = targetSqr,
+                { startingIndex = index,
+                  targetIndex = targetIndex,
                   flags =
                     emptyFlags
                       { castleRightsToRemove =
@@ -446,7 +448,7 @@ generateKingMoves board =
 generateRookMoves :: Board -> [Move]
 generateRookMoves board
   | activeRooks == 0 = []
-  | otherwise = trace (showPrettyBitboard moves) []
+  | otherwise = []
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -471,7 +473,7 @@ generateRookMoves board
 generateBishopMoves :: Board -> [Move]
 generateBishopMoves board
   | activeBishops == 0 = []
-  | otherwise = trace (showPrettyBitboard moves) []
+  | otherwise = []
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -493,10 +495,21 @@ generateBishopMoves board
     blockers = allPieces board .&. diagonalBlockerMasks ! index
     moves = getDiagonalMovesBitboard index blockers .&. complement activePieces
 
+    constructRookMoves bb
+      | bb == 0 = []
+      | otherwise =
+          let targetIndex = countTrailingZeros bb
+           in Move
+                { startingIndex = index,
+                  targetIndex = targetIndex,
+                  flags = emptyFlags
+                }
+                : []
+
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
-  -- generatePawnMoves board
-  -- ++ generateKnightMoves board
-  -- ++ generateKingMoves board
-  -- ++ generateRookMoves board
-  generateBishopMoves board
+  generatePawnMoves board
+    ++ generateKnightMoves board
+    ++ generateKingMoves board
+    ++ generateRookMoves board
+    ++ generateBishopMoves board
