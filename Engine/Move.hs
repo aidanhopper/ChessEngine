@@ -448,7 +448,7 @@ generateKingMoves board =
 generateRookMoves :: Board -> [Move]
 generateRookMoves board
   | activeRooks == 0 = []
-  | otherwise = []
+  | otherwise = constructRookMoves moves
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -470,10 +470,29 @@ generateRookMoves board
     blockers = allPieces board .&. orthogonalBlockerMasks ! index
     moves = getOrthogonalMovesBitboard index blockers .&. complement activePieces
 
+    constructRookMoves bb
+      | bb == 0 = []
+      | otherwise =
+          let targetIndex = countTrailingZeros bb
+           in Move
+                { startingIndex = index,
+                  targetIndex = targetIndex,
+                  flags =
+                    emptyFlags
+                      { isCapture =
+                          popCount (bit targetIndex .&. inactivePieces) == 1,
+                        castleRightsToRemove =
+                          case activeSide of
+                            "w" -> "KQ"
+                            "b" -> "kq"
+                      }
+                }
+                : constructRookMoves (bb .&. complement (bit targetIndex))
+
 generateBishopMoves :: Board -> [Move]
 generateBishopMoves board
   | activeBishops == 0 = []
-  | otherwise = []
+  | otherwise = constructBishopMoves moves
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -495,16 +514,65 @@ generateBishopMoves board
     blockers = allPieces board .&. diagonalBlockerMasks ! index
     moves = getDiagonalMovesBitboard index blockers .&. complement activePieces
 
-    constructRookMoves bb
+    constructBishopMoves bb
       | bb == 0 = []
       | otherwise =
           let targetIndex = countTrailingZeros bb
            in Move
                 { startingIndex = index,
                   targetIndex = targetIndex,
-                  flags = emptyFlags
+                  flags =
+                    emptyFlags
+                      { isCapture =
+                          popCount (bit targetIndex .&. inactivePieces) == 1
+                      }
                 }
-                : []
+                : constructBishopMoves (bb .&. complement (bit targetIndex))
+
+generateQueenMoves :: Board -> [Move]
+generateQueenMoves board
+  | activeQueens == 0 = []
+  | otherwise = constructQueenMoves moves
+  where
+    activeSide = sideToMove board
+    emptySquares = complement $ allPieces board
+
+    index = countTrailingZeros activeQueens
+
+    activeQueens
+      | activeSide == "w" = whiteQueens board
+      | otherwise = blackQueens board
+
+    inactivePieces
+      | activeSide == "w" = blackPieces board
+      | otherwise = whitePieces board
+
+    activePieces
+      | activeSide == "w" = whitePieces board
+      | otherwise = blackPieces board
+
+    orthogonalBlockers = allPieces board .&. orthogonalBlockerMasks ! index
+    diagonalBlockers = allPieces board .&. diagonalBlockerMasks ! index
+
+    orthogonalMoves = getOrthogonalMovesBitboard index orthogonalBlockers
+    diagonalMoves = getDiagonalMovesBitboard index diagonalBlockers
+
+    moves = (orthogonalMoves .|. diagonalMoves) .&. complement activePieces
+
+    constructQueenMoves bb
+      | bb == 0 = []
+      | otherwise =
+          let targetIndex = countTrailingZeros bb
+           in Move
+                { startingIndex = index,
+                  targetIndex = targetIndex,
+                  flags =
+                    emptyFlags
+                      { isCapture =
+                          popCount (bit targetIndex .&. inactivePieces) == 1
+                      }
+                }
+                : constructQueenMoves (bb .&. complement (bit targetIndex))
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
@@ -513,3 +581,4 @@ generatePseudoLegalMoves board =
     ++ generateKingMoves board
     ++ generateRookMoves board
     ++ generateBishopMoves board
+    ++ generateQueenMoves board

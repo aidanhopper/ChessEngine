@@ -7,7 +7,7 @@ import Move
 import Numeric (showIntAtBase)
 import Utils
 
-f = "1nbqkbnr/2p2p2/8/3B4/8/8/R7/3K3q w KQkq - 0 1"
+f = "1nbqkbnr/2p2p2/6q1/3B4/8/3Q4/8/3K4 w KQkq - 0 1"
 
 printBitboard :: Bitboard -> IO ()
 printBitboard bb = do
@@ -38,6 +38,8 @@ main = do
   -- let moveMask = getOrthogonalMovesBitboard index blocker
   -- printBitboard moveMask
 
-  print $ map (\(Move startingIndex targetIndex flags) -> (convertIndex startingIndex, convertIndex targetIndex)) $ generatePseudoLegalMoves board
+  -- print $ map (\(Move startingIndex targetIndex flags) -> (convertIndex startingIndex, convertIndex targetIndex)) $ generatePseudoLegalMoves board
+  --
+  print $ map (\(Move s t f) -> (convertIndex s, convertIndex t)) $ generatePseudoLegalMoves board
 
   return ()
