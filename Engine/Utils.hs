@@ -276,25 +276,22 @@ emptyBoard =
       fullmoveClock = 0
     }
 
-pieceAt :: Square -> Board -> Either ErrorString Char
-pieceAt sqr board
-  | isLeft magicNumberBox = Left "Invalid square as input."
-  | isPopCountOne $ whiteKing board .&. magicNumber = Right 'K'
-  | isPopCountOne $ whiteQueens board .&. magicNumber = Right 'Q'
-  | isPopCountOne $ whiteRooks board .&. magicNumber = Right 'R'
-  | isPopCountOne $ whiteBishops board .&. magicNumber = Right 'B'
-  | isPopCountOne $ whiteKnights board .&. magicNumber = Right 'N'
-  | isPopCountOne $ whitePawns board .&. magicNumber = Right 'P'
-  | isPopCountOne $ blackKing board .&. magicNumber = Right 'k'
-  | isPopCountOne $ blackQueens board .&. magicNumber = Right 'q'
-  | isPopCountOne $ blackRooks board .&. magicNumber = Right 'r'
-  | isPopCountOne $ blackBishops board .&. magicNumber = Right 'b'
-  | isPopCountOne $ blackKnights board .&. magicNumber = Right 'n'
-  | isPopCountOne $ blackPawns board .&. magicNumber = Right 'p'
-  | otherwise = Right '.'
+pieceAt :: Board -> Int -> Char
+pieceAt board index
+  | isPopCountOne $ whiteKing board .&. bit index = 'K'
+  | isPopCountOne $ whiteQueens board .&. bit index = 'Q'
+  | isPopCountOne $ whiteRooks board .&. bit index = 'R'
+  | isPopCountOne $ whiteBishops board .&. bit index = 'B'
+  | isPopCountOne $ whiteKnights board .&. bit index = 'N'
+  | isPopCountOne $ whitePawns board .&. bit index = 'P'
+  | isPopCountOne $ blackKing board .&. bit index = 'k'
+  | isPopCountOne $ blackQueens board .&. bit index = 'q'
+  | isPopCountOne $ blackRooks board .&. bit index = 'r'
+  | isPopCountOne $ blackBishops board .&. bit index = 'b'
+  | isPopCountOne $ blackKnights board .&. bit index = 'n'
+  | isPopCountOne $ blackPawns board .&. bit index = 'p'
+  | otherwise = ' '
   where
-    magicNumberBox = convert sqr
-    magicNumber = (\(Right x) -> x) magicNumberBox
     isPopCountOne n = (==) 1 $ popCount n
 
 parseBoard :: FenString -> Either ErrorString Board

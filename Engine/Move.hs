@@ -582,3 +582,144 @@ generatePseudoLegalMoves board =
     ++ generateRookMoves board
     ++ generateBishopMoves board
     ++ generateQueenMoves board
+
+makeMove :: Board -> Move -> Board
+makeMove board move = emptyBoard
+  where
+    hasIndex bb index = popCount (bb .&. bit index) == 1
+
+    startingIdx = startingIndex move
+    targetIdx = targetIndex move
+
+    hasStartingIndex bb = hasIndex bb startingIdx
+    hasTargetIndex bb = hasIndex bb targetIdx
+
+    activeSide = sideToMove board
+    emptySquares = complement $ allPieces board
+
+    movingBBIsWhiteKing = hasStartingIndex (whiteKing board)
+    movingBBIsWhiteQueens = hasStartingIndex (whiteQueens board)
+    movingBBIsWhiteKnights = hasStartingIndex (whiteKnights board)
+    movingBBIsWhiteBishops = hasStartingIndex (whiteBishops board)
+    movingBBIsWhiteRooks = hasStartingIndex (whiteRooks board)
+    movingBBIsWhitePawns = hasStartingIndex (whitePawns board)
+
+    movingBBIsBlackKing = hasStartingIndex (blackKing board)
+    movingBBIsBlackQueens = hasStartingIndex (blackQueens board)
+    movingBBIsBlackKnights = hasStartingIndex (blackKnights board)
+    movingBBIsBlackBishops = hasStartingIndex (blackBishops board)
+    movingBBIsBlackRooks = hasStartingIndex (blackRooks board)
+    movingBBIsBlackPawns = hasStartingIndex (blackPawns board)
+
+    captureBBIsWhiteKing = hasStartingIndex (whiteKing board)
+    captureBBIsWhiteQueens = hasStartingIndex (whiteQueens board)
+    captureBBIsWhiteKnights = hasStartingIndex (whiteKnights board)
+    captureBBIsWhiteBishops = hasStartingIndex (whiteBishops board)
+    captureBBIsWhiteRooks = hasStartingIndex (whiteRooks board)
+    captureBBIsWhitePawns = hasStartingIndex (whitePawns board)
+
+    captureBBIsBlackKing = hasStartingIndex (blackKing board)
+    captureBBIsBlackQueens = hasStartingIndex (blackQueens board)
+    captureBBIsBlackKnights = hasStartingIndex (blackKnights board)
+    captureBBIsBlackBishops = hasStartingIndex (blackBishops board)
+    captureBBIsBlackRooks = hasStartingIndex (blackRooks board)
+    captureBBIsBlackPawns = hasStartingIndex (blackPawns board)
+
+    movingBB
+      | movingBBIsWhiteKing = whiteKing board
+      | movingBBIsWhiteQueens = whiteQueens board
+      | movingBBIsWhiteKnights = whiteKnights board
+      | movingBBIsWhiteBishops = whiteBishops board
+      | movingBBIsWhiteRooks = whiteRooks board
+      | movingBBIsWhitePawns = whitePawns board
+      | movingBBIsBlackKing = blackKing board
+      | movingBBIsBlackQueens = blackQueens board
+      | movingBBIsBlackKnights = blackKnights board
+      | movingBBIsBlackBishops = blackBishops board
+      | movingBBIsBlackRooks = blackRooks board
+      | movingBBIsBlackPawns = blackPawns board
+
+    captureBB
+      | captureBBIsWhiteKing = whiteKing board
+      | captureBBIsWhiteQueens = whiteQueens board
+      | captureBBIsWhiteKnights = whiteKnights board
+      | captureBBIsWhiteBishops = whiteBishops board
+      | captureBBIsWhiteRooks = whiteRooks board
+      | captureBBIsWhitePawns = whitePawns board
+      | captureBBIsBlackKing = blackKing board
+      | captureBBIsBlackQueens = blackQueens board
+      | captureBBIsBlackKnights = blackKnights board
+      | captureBBIsBlackBishops = blackBishops board
+      | captureBBIsBlackRooks = blackRooks board
+      | captureBBIsBlackPawns = blackPawns board
+      | otherwise = 0
+
+    updatedMovingBB =
+      movingBB
+        .|. bit targetIdx .&. complement (bit startingIdx)
+
+    updatedCaptureBB = captureBB .&. complement (bit targetIdx)
+
+    updatedBoard
+      | isDoublePawnPush moveFlags = board
+      | isEnPassant moveFlags = board
+      | isQueenSideCastle moveFlags = board
+      | isKingSideCastle moveFlags = board
+      | otherwise =
+          board
+            { whiteKing = updatedWhiteKing,
+              whiteQueens = updatedWhiteQueens,
+              whiteKnights = updatedWhiteKnights,
+              whiteBishops = updatedWhiteBishops,
+              whiteRooks = updatedWhiteRooks,
+              whitePawns = updatedWhitePawns,
+              blackKing = updatedBlackKing,
+              blackQueens = updatedBlackQueens,
+              blackKnights = updatedBlackKnights,
+              blackBishops = updatedBlackBishops,
+              blackRooks = updatedBlackRooks,
+              blackPawns = updatedBlackPawns,
+              sideToMove =
+                case sideToMove board of
+                  "w" -> "b"
+                  "b" -> "w",
+              castleRights = updatedCastleRights
+            }
+      where
+        moveFlags = flags move
+
+        updateBB moving capture def
+          | moving = updatedMovingBB
+          | capture = updatedCaptureBB
+          | otherwise = def
+
+        updatedWhiteKing = updateBB movingBBIsWhiteKing captureBBIsWhiteKing (whiteKing board)
+        updatedWhiteQueens = updateBB movingBBIsWhiteQueens captureBBIsWhiteQueens (whiteQueens board)
+        updatedWhiteKnights = updateBB movingBBIsWhiteKnights captureBBIsWhiteKnights (whiteKnights board)
+        updatedWhiteBishops = updateBB movingBBIsWhiteBishops captureBBIsWhiteBishops (whiteBishops board)
+        updatedWhiteRooks = updateBB movingBBIsWhiteRooks captureBBIsWhiteRooks (whiteRooks board)
+        updatedWhitePawns = updateBB movingBBIsWhitePawns captureBBIsWhitePawns (whitePawns board)
+
+        updatedBlackKing = updateBB movingBBIsBlackKing captureBBIsBlackKing (blackKing board)
+        updatedBlackQueens = updateBB movingBBIsBlackQueens captureBBIsBlackQueens (blackQueens board)
+        updatedBlackKnights = updateBB movingBBIsBlackKnights captureBBIsBlackKnights (blackKnights board)
+        updatedBlackBishops = updateBB movingBBIsBlackBishops captureBBIsBlackBishops (blackBishops board)
+        updatedBlackRooks = updateBB movingBBIsBlackRooks captureBBIsBlackRooks (blackRooks board)
+        updatedBlackPawns = updateBB movingBBIsBlackPawns captureBBIsBlackPawns (blackPawns board)
+
+        updatedCastleRights
+          | castleRightsToRemove moveFlags == "" = castleRights board
+          | otherwise = helper (castleRights board)
+          where
+            helper [] = []
+            helper (x : xs)
+              | x `notElem` castleRightsToRemove moveFlags = x : helper xs
+              | otherwise = helper xs
+
+-- moveFlags = flags move
+-- { isDoublePawnPush :: Bool,
+-- isCapture :: Bool,
+-- castleRightsToRemove :: String,
+-- isEnPassant :: Bool,
+-- isQueenSideCastle :: Bool,
+-- isKingSideCastle :: Bool

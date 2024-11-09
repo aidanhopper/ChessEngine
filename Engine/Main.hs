@@ -22,24 +22,11 @@ printBitboards (bb : bbs) = do
 main :: IO ()
 main = do
   let board = (\(Right x) -> x) $ parseBoard f
-  -- let index = 27
-  --
-  -- putStrLn $ "The blocker mask for index " ++ show index
-  -- let blockerMask = orthogonalBlockerMask index
-  -- printBitboard blockerMask
-  --
-  -- let allBlockers = allBlockerBitboards blockerMask
-  -- putStrLn $ "One of the possible blocker masks for index " ++ show index
-  -- let blocker = allBlockers !! 430
-  -- printBitboard blocker
-  --
-  --
-  -- putStrLn "The resulting movement mask"
-  -- let moveMask = getOrthogonalMovesBitboard index blocker
-  -- printBitboard moveMask
+  -- print $ map (\(Move s t f) -> (convertIndex s, convertIndex t)) $ generatePseudoLegalMoves board
 
-  -- print $ map (\(Move startingIndex targetIndex flags) -> (convertIndex startingIndex, convertIndex targetIndex)) $ generatePseudoLegalMoves board
-  --
-  print $ map (\(Move s t f) -> (convertIndex s, convertIndex t)) $ generatePseudoLegalMoves board
+  let moves = generatePseudoLegalMoves board
+  let move = head moves
+
+  print $ makeMove board move
 
   return ()
