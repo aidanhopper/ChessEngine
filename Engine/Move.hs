@@ -181,24 +181,21 @@ generatePawnMoves board =
       | activeSide == "w" = 9
       | otherwise = -9
 
-    getFileMask :: Square -> Bitboard
-    getFileMask sqr =
-      case head sqr of
-        'a' -> fileAMask
-        'b' -> fileBMask
-        'c' -> fileCMask
-        'd' -> fileDMask
-        'e' -> fileEMask
-        'f' -> fileFMask
-        'g' -> fileGMask
-        'h' -> fileHMask
+    getFileMask index =
+      case index `mod` 8 of
+        0 -> fileAMask
+        1 -> fileBMask
+        2 -> fileCMask
+        3 -> fileDMask
+        4 -> fileEMask
+        5 -> fileFMask
+        6 -> fileGMask
+        7 -> fileHMask
 
-    getRankMask :: Square -> Bitboard
-    getRankMask activeSide
+    enPassantTargetRankMask
       | activeSide == "w" = rankFiveMask
       | activeSide == "b" = rankFourMask
 
-    enPassantTargetRankMask = getRankMask enPassantTargetSquare
     enPassantTargetFileMask = getFileMask enPassantTargetSquare
 
     singlePushes :: Bitboard
@@ -218,7 +215,7 @@ generatePawnMoves board =
 
     enPassantAttackWest :: Bitboard
     enPassantAttackWest
-      | enPassantTargetSquare == "-" = 0
+      | enPassantTargetSquare == -1 = 0
       | otherwise =
           shift
             ( shiftL activePawns 1
@@ -230,7 +227,7 @@ generatePawnMoves board =
 
     enPassantAttackEast :: Bitboard
     enPassantAttackEast
-      | enPassantTargetSquare == "-" = 0
+      | enPassantTargetSquare == -1 = 0
       | otherwise =
           shift
             ( shiftR activePawns 1
@@ -661,8 +658,11 @@ makeMove board move = emptyBoard
     updatedCaptureBB = captureBB .&. complement (bit targetIdx)
 
     updatedBoard
-      | isDoublePawnPush moveFlags = board
-      | isEnPassant moveFlags = board
+      | isEnPassant moveFlags =
+          board
+            { whitePawns = updatedWhitePawns,
+              blackPawns = updatedBlackPawns
+            }
       | isQueenSideCastle moveFlags = board
       | isKingSideCastle moveFlags = board
       | otherwise =
@@ -683,7 +683,13 @@ makeMove board move = emptyBoard
                 case sideToMove board of
                   "w" -> "b"
                   "b" -> "w",
-              castleRights = updatedCastleRights
+              castleRights = updatedCastleRights,
+              enPassantTarget =
+                if not (isDoublePawnPush moveFlags)
+                  then -1
+                  else case sideToMove board of
+                    "w" -> targetIdx - 8
+                    "b" -> targetIdx + 8
             }
       where
         moveFlags = flags move
@@ -698,14 +704,20 @@ makeMove board move = emptyBoard
         updatedWhiteKnights = updateBB movingBBIsWhiteKnights captureBBIsWhiteKnights (whiteKnights board)
         updatedWhiteBishops = updateBB movingBBIsWhiteBishops captureBBIsWhiteBishops (whiteBishops board)
         updatedWhiteRooks = updateBB movingBBIsWhiteRooks captureBBIsWhiteRooks (whiteRooks board)
-        updatedWhitePawns = updateBB movingBBIsWhitePawns captureBBIsWhitePawns (whitePawns board)
+        updatedWhitePawns =
+          if not (isEnPassant moveFlags)
+            then updateBB movingBBIsWhitePawns captureBBIsWhitePawns (whitePawns board)
+            else 0
 
         updatedBlackKing = updateBB movingBBIsBlackKing captureBBIsBlackKing (blackKing board)
         updatedBlackQueens = updateBB movingBBIsBlackQueens captureBBIsBlackQueens (blackQueens board)
         updatedBlackKnights = updateBB movingBBIsBlackKnights captureBBIsBlackKnights (blackKnights board)
         updatedBlackBishops = updateBB movingBBIsBlackBishops captureBBIsBlackBishops (blackBishops board)
         updatedBlackRooks = updateBB movingBBIsBlackRooks captureBBIsBlackRooks (blackRooks board)
-        updatedBlackPawns = updateBB movingBBIsBlackPawns captureBBIsBlackPawns (blackPawns board)
+        updatedBlackPawns =
+          if not (isEnPassant moveFlags)
+            then updateBB movingBBIsBlackPawns captureBBIsBlackPawns (blackPawns board)
+            else 0
 
         updatedCastleRights
           | castleRightsToRemove moveFlags == "" = castleRights board

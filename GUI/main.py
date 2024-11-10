@@ -5,6 +5,7 @@ import urllib.parse
 
 
 API_URL = 'http://localhost:8080'
+
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 1024
 click_x, click_y = None, None

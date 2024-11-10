@@ -135,7 +135,7 @@ data Board = Board
     allPieces :: Bitboard,
     sideToMove :: String,
     castleRights :: String,
-    enPassantTarget :: String,
+    enPassantTarget :: Int,
     halfmoveClock :: Int,
     fullmoveClock :: Int
   }
@@ -218,7 +218,7 @@ instance Show Board where
         ++ ", castleRights = "
         ++ castleRights
         ++ ", enPassantTarget = "
-        ++ enPassantTarget
+        ++ show enPassantTarget
         ++ ", halfmoveClock = "
         ++ show halfmoveClock
         ++ ", fullmoveClock = "
@@ -270,7 +270,7 @@ emptyBoard =
       blackPieces = 0,
       allPieces = 0,
       sideToMove = "",
-      enPassantTarget = "",
+      enPassantTarget = -1,
       castleRights = "",
       halfmoveClock = 0,
       fullmoveClock = 0
@@ -300,7 +300,11 @@ parseBoard str =
     ( emptyBoard
         { sideToMove = sideToMoveFen fen,
           castleRights = castlingAbilityFen fen,
-          enPassantTarget = enPassantTargetSquareFen fen,
+          enPassantTarget =
+            countTrailingZeros $
+              (\(Right x) -> x) $
+                convert $
+                  enPassantTargetSquareFen fen,
           halfmoveClock = halfmoveClockFen fen,
           fullmoveClock = fullmoveClockFen fen
         }
