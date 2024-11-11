@@ -15,22 +15,26 @@
 
         default = pkgs.mkShell {
           packages = with pkgs; [
+            jq
             cabal-install
             haskell-language-server
             haskellPackages.HUnit
-            haskellPackages.servant
-            haskellPackages.servant-server
+            haskellPackages.scotty
+            create-react-app
+            nodejs_22
             python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.HUnit
-              haskellPackages.servant
-              haskellPackages.servant-server
+              haskellPackages.scotty
             ]))
           ] ++ (with pkgs.python312Packages; [
             pip
             pygame-ce
             requests
-          ]);
+          ]) ++
+            (with pkgs.nodePackages; [
+              tailwindcss
+            ]);
         };
       });
     };

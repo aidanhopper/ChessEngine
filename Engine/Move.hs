@@ -580,8 +580,14 @@ generatePseudoLegalMoves board =
     ++ generateBishopMoves board
     ++ generateQueenMoves board
 
+generateMoves :: Board -> [Move]
+generateMoves = generatePseudoLegalMoves
+
+getPossibleMoves :: String -> Either String [Move]
+getPossibleMoves fen = generateMoves <$> parseBoard fen
+
 makeMove :: Board -> Move -> Board
-makeMove board move = emptyBoard
+makeMove board move = updatedBoard
   where
     hasIndex bb index = popCount (bb .&. bit index) == 1
 
@@ -652,8 +658,7 @@ makeMove board move = emptyBoard
       | otherwise = 0
 
     updatedMovingBB =
-      movingBB
-        .|. bit targetIdx .&. complement (bit startingIdx)
+      (movingBB .|. bit targetIdx) .&. complement (bit startingIdx)
 
     updatedCaptureBB = captureBB .&. complement (bit targetIdx)
 
@@ -699,25 +704,87 @@ makeMove board move = emptyBoard
           | capture = updatedCaptureBB
           | otherwise = def
 
-        updatedWhiteKing = updateBB movingBBIsWhiteKing captureBBIsWhiteKing (whiteKing board)
-        updatedWhiteQueens = updateBB movingBBIsWhiteQueens captureBBIsWhiteQueens (whiteQueens board)
-        updatedWhiteKnights = updateBB movingBBIsWhiteKnights captureBBIsWhiteKnights (whiteKnights board)
-        updatedWhiteBishops = updateBB movingBBIsWhiteBishops captureBBIsWhiteBishops (whiteBishops board)
-        updatedWhiteRooks = updateBB movingBBIsWhiteRooks captureBBIsWhiteRooks (whiteRooks board)
-        updatedWhitePawns =
-          if not (isEnPassant moveFlags)
-            then updateBB movingBBIsWhitePawns captureBBIsWhitePawns (whitePawns board)
-            else 0
+        updatedWhiteKing =
+          updateBB
+            movingBBIsWhiteKing
+            captureBBIsWhiteKing
+            (whiteKing board)
 
-        updatedBlackKing = updateBB movingBBIsBlackKing captureBBIsBlackKing (blackKing board)
-        updatedBlackQueens = updateBB movingBBIsBlackQueens captureBBIsBlackQueens (blackQueens board)
-        updatedBlackKnights = updateBB movingBBIsBlackKnights captureBBIsBlackKnights (blackKnights board)
-        updatedBlackBishops = updateBB movingBBIsBlackBishops captureBBIsBlackBishops (blackBishops board)
-        updatedBlackRooks = updateBB movingBBIsBlackRooks captureBBIsBlackRooks (blackRooks board)
-        updatedBlackPawns =
-          if not (isEnPassant moveFlags)
-            then updateBB movingBBIsBlackPawns captureBBIsBlackPawns (blackPawns board)
-            else 0
+        updatedWhiteQueens =
+          updateBB
+            movingBBIsWhiteQueens
+            captureBBIsWhiteQueens
+            (whiteQueens board)
+
+        updatedWhiteKnights =
+          updateBB
+            movingBBIsWhiteKnights
+            captureBBIsWhiteKnights
+            (whiteKnights board)
+
+        updatedWhiteBishops =
+          updateBB
+            movingBBIsWhiteBishops
+            captureBBIsWhiteBishops
+            (whiteBishops board)
+
+        updatedWhiteRooks =
+          updateBB
+            movingBBIsWhiteRooks
+            captureBBIsWhiteRooks
+            (whiteRooks board)
+
+        updatedWhitePawns
+          | not (isEnPassant moveFlags) =
+              updateBB
+                movingBBIsWhitePawns
+                captureBBIsWhitePawns
+                (whitePawns board)
+          | movingBBIsWhitePawns = updatedMovingBB
+          | otherwise =
+              updatedCaptureBB
+                .&. complement (bit (enPassantTarget board - 8))
+
+        updatedBlackKing =
+          updateBB
+            movingBBIsBlackKing
+            captureBBIsBlackKing
+            (blackKing board)
+
+        updatedBlackQueens =
+          updateBB
+            movingBBIsBlackQueens
+            captureBBIsBlackQueens
+            (blackQueens board)
+
+        updatedBlackKnights =
+          updateBB
+            movingBBIsBlackKnights
+            captureBBIsBlackKnights
+            (blackKnights board)
+
+        updatedBlackBishops =
+          updateBB
+            movingBBIsBlackBishops
+            captureBBIsBlackBishops
+            (blackBishops board)
+
+        updatedBlackRooks =
+          updateBB
+            movingBBIsBlackRooks
+            captureBBIsBlackRooks
+            (blackRooks board)
+
+        updatedBlackPawns
+          | not (isEnPassant moveFlags) =
+              updateBB
+                movingBBIsBlackPawns
+                captureBBIsBlackPawns
+                (blackPawns board)
+          | movingBBIsBlackPawns = updatedMovingBB
+          | otherwise =
+              updatedCaptureBB
+                .&. complement (bit (enPassantTarget board + 8))
 
         updatedCastleRights
           | castleRightsToRemove moveFlags == "" = castleRights board
@@ -727,11 +794,3 @@ makeMove board move = emptyBoard
             helper (x : xs)
               | x `notElem` castleRightsToRemove moveFlags = x : helper xs
               | otherwise = helper xs
-
--- moveFlags = flags move
--- { isDoublePawnPush :: Bool,
--- isCapture :: Bool,
--- castleRightsToRemove :: String,
--- isEnPassant :: Bool,
--- isQueenSideCastle :: Bool,
--- isKingSideCastle :: Bool

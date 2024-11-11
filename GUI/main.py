@@ -2,9 +2,10 @@ import pygame
 import sys
 import requests
 import urllib.parse
+import json
 
 
-API_URL = 'http://localhost:8080'
+API_URL = 'http://localhost:3000'
 
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 1024
@@ -40,7 +41,7 @@ class Query:
     @staticmethod
     def possible_moves(fen, square):
         encoded_fen = Query.encode_fen(fen)
-        url = f'{API_URL}/moves/{encoded_fen}/{square}'
+        url = f'{API_URL}/possible-moves?fen={encoded_fen}'
         request = requests.get(url)
         request.raise_for_status()
         return request.json()
@@ -218,9 +219,9 @@ class ChessBoard:
                 
         
 if __name__ == '__main__':
-    running = True
+    running = False
     board = ChessBoard()
-
+    out = Query.possible_moves(board.fen, "")
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

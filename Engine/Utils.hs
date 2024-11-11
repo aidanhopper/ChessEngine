@@ -1,11 +1,13 @@
 module Utils where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Bits
 import Data.Char (digitToInt, isDigit)
 import Data.Either (isLeft, isRight)
 import Data.Word (Word64)
 import Debug.Trace
 import Fen
+import GHC.Generics
 import Text.Printf
 
 rankOneMask :: Bitboard
@@ -230,7 +232,11 @@ data Move = Move
     targetIndex :: Int,
     flags :: Flags
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON Move
+
+instance FromJSON Move
 
 data Flags = Flags
   { isDoublePawnPush :: Bool,
@@ -240,7 +246,11 @@ data Flags = Flags
     isQueenSideCastle :: Bool,
     isKingSideCastle :: Bool
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON Flags
+
+instance FromJSON Flags
 
 emptyFlags =
   Flags
@@ -300,11 +310,7 @@ parseBoard str =
     ( emptyBoard
         { sideToMove = sideToMoveFen fen,
           castleRights = castlingAbilityFen fen,
-          enPassantTarget =
-            countTrailingZeros $
-              (\(Right x) -> x) $
-                convert $
-                  enPassantTargetSquareFen fen,
+          enPassantTarget = ept,
           halfmoveClock = halfmoveClockFen fen,
           fullmoveClock = fullmoveClockFen fen
         }
@@ -312,79 +318,80 @@ parseBoard str =
     stringBoard
     0
   where
+    ept
+      | convert (enPassantTargetSquareFen fen) /= 0 =
+          countTrailingZeros $ convert $ enPassantTargetSquareFen fen
+      | otherwise = -1
     fen = parseFen str
     stringBoard =
       concat $ createPiecePositionStringBoard $ piecePlacementFen fen
     buildBoard :: Board -> String -> Int -> Either ErrorString Board
     buildBoard board [] _ = Right board
-    buildBoard board (c : cs) index
-      | isLeft magicNumberBox =
-          Left "Something went wrong with the magic number conversion in parseBoard."
-      | otherwise =
-          case c of
-            'K' ->
-              buildBoard
-                ( whiteBoard {whiteKing = whiteKing whiteBoard .|. magicNumber}
-                )
-                cs
-                (index + 1)
-            'Q' ->
-              buildBoard
-                (whiteBoard {whiteQueens = whiteQueens whiteBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'R' ->
-              buildBoard
-                (whiteBoard {whiteRooks = whiteRooks whiteBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'B' ->
-              buildBoard
-                (whiteBoard {whiteBishops = whiteBishops whiteBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'N' ->
-              buildBoard
-                (whiteBoard {whiteKnights = whiteKnights whiteBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'P' ->
-              buildBoard
-                (whiteBoard {whitePawns = whitePawns whiteBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'k' ->
-              buildBoard
-                (blackBoard {blackKing = blackPawns blackBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'q' ->
-              buildBoard
-                (blackBoard {blackQueens = blackQueens blackBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'r' ->
-              buildBoard
-                ( blackBoard {blackRooks = blackRooks blackBoard .|. magicNumber}
-                )
-                cs
-                (index + 1)
-            'b' ->
-              buildBoard
-                (blackBoard {blackBishops = blackBishops blackBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'n' ->
-              buildBoard
-                (blackBoard {blackKnights = blackKnights blackBoard .|. magicNumber})
-                cs
-                (index + 1)
-            'p' ->
-              buildBoard
-                (blackBoard {blackPawns = blackPawns blackBoard .|. magicNumber})
-                cs
-                (index + 1)
-            _ -> buildBoard board cs (index + 1)
+    buildBoard board (c : cs) index =
+      case c of
+        'K' ->
+          buildBoard
+            ( whiteBoard {whiteKing = whiteKing whiteBoard .|. magicNumber}
+            )
+            cs
+            (index + 1)
+        'Q' ->
+          buildBoard
+            (whiteBoard {whiteQueens = whiteQueens whiteBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'R' ->
+          buildBoard
+            (whiteBoard {whiteRooks = whiteRooks whiteBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'B' ->
+          buildBoard
+            (whiteBoard {whiteBishops = whiteBishops whiteBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'N' ->
+          buildBoard
+            (whiteBoard {whiteKnights = whiteKnights whiteBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'P' ->
+          buildBoard
+            (whiteBoard {whitePawns = whitePawns whiteBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'k' ->
+          buildBoard
+            (blackBoard {blackKing = blackPawns blackBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'q' ->
+          buildBoard
+            (blackBoard {blackQueens = blackQueens blackBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'r' ->
+          buildBoard
+            ( blackBoard {blackRooks = blackRooks blackBoard .|. magicNumber}
+            )
+            cs
+            (index + 1)
+        'b' ->
+          buildBoard
+            (blackBoard {blackBishops = blackBishops blackBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'n' ->
+          buildBoard
+            (blackBoard {blackKnights = blackKnights blackBoard .|. magicNumber})
+            cs
+            (index + 1)
+        'p' ->
+          buildBoard
+            (blackBoard {blackPawns = blackPawns blackBoard .|. magicNumber})
+            cs
+            (index + 1)
+        _ -> buildBoard board cs (index + 1)
       where
         col = case index `mod` 8 of
           0 -> "a"
@@ -399,7 +406,7 @@ parseBoard str =
         sqr = col ++ row
 
         magicNumberBox = convert sqr
-        magicNumber = (\(Right x) -> x) magicNumberBox
+        magicNumber = magicNumberBox
 
         allPiecesBoard = board {allPieces = allPieces board .|. magicNumber}
         whiteBoard = allPiecesBoard {whitePieces = whitePieces board .|. magicNumber}
@@ -422,25 +429,22 @@ createPiecePositionStringBoard str = reverse $ f str [""]
                in " " ++ (g . head . show $ (num - 1))
           | otherwise = [x]
 
-convert :: Square -> Either ErrorString Bitboard
-convert [col, row]
-  | not $ isDigit row = Left "Invalid row. Not a digit."
-  | digitToInt row <= 0 || digitToInt row > 8 =
-      Left ("Invalid row " ++ [col, row] ++ ". Out of bounds number.")
-  | otherwise =
-      case col of
-        'h' -> Right $ shiftL 0b1 shiftAmount
-        'g' -> Right $ shiftL 0b10 shiftAmount
-        'f' -> Right $ shiftL 0b100 shiftAmount
-        'e' -> Right $ shiftL 0b1000 shiftAmount
-        'd' -> Right $ shiftL 0b10000 shiftAmount
-        'c' -> Right $ shiftL 0b100000 shiftAmount
-        'b' -> Right $ shiftL 0b1000000 shiftAmount
-        'a' -> Right $ shiftL 0b10000000 shiftAmount
-        _ -> Left ("Invalid letter, input col was " ++ [col] ++ ".")
+convert :: Square -> Bitboard
+convert [col, row] =
+  case col of
+    'h' -> shiftL 0b1 shiftAmount
+    'g' -> shiftL 0b10 shiftAmount
+    'f' -> shiftL 0b100 shiftAmount
+    'e' -> shiftL 0b1000 shiftAmount
+    'd' -> shiftL 0b10000 shiftAmount
+    'c' -> shiftL 0b100000 shiftAmount
+    'b' -> shiftL 0b1000000 shiftAmount
+    'a' -> shiftL 0b10000000 shiftAmount
+    _ -> 0
   where
     shiftAmount = (digitToInt row - 1) * 8
-convert _ = Left "Invalid, input must have a length of 2."
+convert "-" = 0
+convert x = trace (show x) error "BAD"
 
 convertIndex :: Int -> Square
 convertIndex index = col ++ row
@@ -473,37 +477,86 @@ toPiecePlacement board =
 printFenString :: String -> IO ()
 printFenString fenString = do
   let fen = parseFen fenString
-  let board = createPiecePositionStringBoard $ piecePlacementFen fen
+  let board = map (map (\x -> if x == ' ' then '.' else x)) $ createPiecePositionStringBoard $ piecePlacementFen fen
+  putStrLn "   abcdefgh"
+  putStrLn "   --------"
   putStrLn $
     "8 |"
-      ++ addSpaces (head board)
+      ++ head board
       ++ "  side to move      "
       ++ sideToMoveFen fen
   putStrLn $
     "7 |"
-      ++ addSpaces (board !! 1)
+      ++ board !! 1
       ++ "  castling ability  "
       ++ castlingAbilityFen fen
   putStrLn $
     "6 |"
-      ++ addSpaces (board !! 2)
+      ++ board !! 2
       ++ "  enpassant square  "
       ++ enPassantTargetSquareFen fen
   putStrLn $
     "5 |"
-      ++ addSpaces (board !! 3)
+      ++ board !! 3
       ++ "  halfmove clock    "
       ++ show (halfmoveClockFen fen)
   putStrLn $
     "4 |"
-      ++ addSpaces (board !! 4)
+      ++ board !! 4
       ++ "  fullmove clock    "
       ++ show (fullmoveClockFen fen)
-  putStrLn $ "3 |" ++ addSpaces (board !! 5)
-  putStrLn $ "2 |" ++ addSpaces (board !! 6)
-  putStrLn $ "1 |" ++ addSpaces (board !! 7)
-  putStrLn "   ---------------"
-  putStrLn "   a b c d e f g h"
+  putStrLn $ "3 |" ++ board !! 5
+  putStrLn $ "2 |" ++ board !! 6
+  putStrLn $ "1 |" ++ board !! 7
+  putStrLn "   --------"
+  putStrLn "   abcdefgh"
   where
     addSpaces [] = []
     addSpaces (c : cs) = c : ' ' : addSpaces cs
+
+-- boardToFenString :: Board -> String
+boardToFenString board =
+  piecePlacementString
+    ++ " "
+    ++ sideToMove board
+    ++ " "
+    ++ castleRights board
+    ++ " "
+    ++ enPassantSquareString
+    ++ " "
+    ++ show (halfmoveClock board)
+    ++ " "
+    ++ show (fullmoveClock board)
+  where
+    -- get pieces from the board
+    pieces = map (pieceAt board) [0 .. 63]
+
+    -- split pieces into an 8x8 2d list
+    splitPieces = split pieces ""
+      where
+        split :: String -> String -> [String]
+        split [] acc = [acc]
+        split (c : cs) acc
+          | length acc == 8 = acc : split cs [c]
+          | otherwise = split cs (c : acc)
+
+    -- create function that takes a row and maps its spaces to numbers
+    g row = f row 0
+      where
+        f [] acc
+          | acc == 0 = ""
+          | otherwise = show acc
+        f (c : cs) acc
+          | c == ' ' = f cs (acc + 1)
+          | acc == 0 = c : f cs 0
+          | otherwise = head (show acc) : c : f cs 0
+
+    mapped = reverse $ map g splitPieces
+
+    piecePlacementString = tail $ foldr (\x acc -> "/" ++ x ++ acc) "" mapped
+
+    enPassantSquareString
+      | enPassantTarget board == -1 = "-"
+      | otherwise = convertIndex $ enPassantTarget board
+
+printBoard = printFenString . boardToFenString
