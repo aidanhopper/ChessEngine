@@ -6,15 +6,13 @@ import json
 
 
 API_URL = 'http://localhost:3000'
-
-SCREEN_WIDTH = 1024
-SCREEN_HEIGHT = 1024
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
 click_x, click_y = None, None
 mouse_x, mouse_y = 0, 0
 is_moving_piece = False
 moving = None
 target = None
-
 
 
 # Initialize Pygame
@@ -39,7 +37,7 @@ class Query:
         return urllib.parse.quote(fen, safe='')
 
     @staticmethod
-    def possible_moves(fen, square):
+    def possible_moves(fen):
         encoded_fen = Query.encode_fen(fen)
         url = f'{API_URL}/possible-moves?fen={encoded_fen}'
         request = requests.get(url)
@@ -47,9 +45,9 @@ class Query:
         return request.json()
 
     @staticmethod
-    def do_move(fen, moving, target):
+    def make_move(fen, moving, target):
         encoded_fen = Query.encode_fen(fen)
-        url = f'{API_URL}/domove/{encoded_fen}/{moving}/{target}'
+        url = f'{API_URL}/make-move?fen={encoded_fen}&start={moving}&target={target}'
         request = requests.get(url)
         request.raise_for_status()
         return request.json()
@@ -63,7 +61,8 @@ class Query:
 
 class Piece:
     def __init__(self, char, row, col):
-        self.image = pygame.image.load(f'./GUI/Pieces/{char}.png')
+        image_name = f'{char.lower()}w' if char.isupper() else f'{char}b' 
+        self.image = pygame.image.load(f'./GUI/Pieces/{image_name}.png')
         self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH // 8, SCREEN_HEIGHT // 8))
         self.char = char
         self.row = row
@@ -90,7 +89,9 @@ class Piece:
 
 class ChessBoard:
     def __init__(self):
-        self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        #self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        self.fen = 'r4b1r/8/8/6Pp/4n3/8/PPPPPP1P/4K3 b KQkq - 0 1'
+        self.possible_moves = None
 
     @staticmethod
     def to_algebraic_position(row, col):
@@ -201,27 +202,26 @@ class ChessBoard:
     def draw_possible_moves(self):
         if is_moving_piece:
             if self.possible_moves == None:
-                self.possible_moves = Query.possible_moves(self.fen, moving)
+                self.possible_moves = Query.possible_moves(self.fen)
+                print(self.possible_moves)
 
             for move in self.possible_moves:
-                row, col = ChessBoard.to_row_and_col_position(move)
+                if move['startingSquare'] == moving:
+                    row, col = ChessBoard.to_row_and_col_position(move['targetSquare'])
 
-                screen_x = col * SCREEN_WIDTH // 8 + SCREEN_WIDTH//32
-                screen_y = row * SCREEN_HEIGHT // 8 + SCREEN_HEIGHT//32
+                    screen_x = col * SCREEN_WIDTH // 8 + SCREEN_WIDTH//32
+                    screen_y = row * SCREEN_HEIGHT // 8 + SCREEN_HEIGHT//32
 
-                pygame.draw.rect(
-                    screen, (34, 139, 34),
-                    (screen_x, screen_y,SCREEN_WIDTH//16, SCREEN_HEIGHT//16)
-                )
-        else:
-            self.possible_moves = None
-
+                    pygame.draw.rect(
+                        screen, (34, 139, 34),
+                        (screen_x, screen_y,SCREEN_WIDTH//16, SCREEN_HEIGHT//16)
+                    )
                 
         
 if __name__ == '__main__':
-    running = False
+    running = True
     board = ChessBoard()
-    out = Query.possible_moves(board.fen, "")
+    out = Query.possible_moves(board.fen)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -240,11 +240,15 @@ if __name__ == '__main__':
 
                     print(moving)
                     print(target)
-
-                    new_fen = Query.do_move(board.fen, moving, target)
-                    print(new_fen)
-                    if new_fen != None:
-                        board.fen = Query.best_move(new_fen[0])
+                    
+                    if moving != target:
+                        new_fen = Query.make_move(board.fen, moving, target)
+                        print(new_fen)
+                        board.fen = new_fen
+                        board.possible_moves = None
+                        # if new_fen != None:
+                        #     board.fen = Query.best_move(new_fen[0])
+                        #     board.possible_moves = None
 
                     is_moving_piece = False
                     

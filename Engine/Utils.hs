@@ -117,8 +117,6 @@ type Bitboard = Word64
 
 type Square = String
 
-type ErrorString = String
-
 data Board = Board
   { whiteKing :: Bitboard,
     whiteQueens :: Bitboard,
@@ -304,7 +302,7 @@ pieceAt board index
   where
     isPopCountOne n = (==) 1 $ popCount n
 
-parseBoard :: FenString -> Either ErrorString Board
+parseBoard :: FenString -> Either String Board
 parseBoard str =
   buildBoard
     ( emptyBoard
@@ -325,7 +323,7 @@ parseBoard str =
     fen = parseFen str
     stringBoard =
       concat $ createPiecePositionStringBoard $ piecePlacementFen fen
-    buildBoard :: Board -> String -> Int -> Either ErrorString Board
+    buildBoard :: Board -> String -> Int -> Either String Board
     buildBoard board [] _ = Right board
     buildBoard board (c : cs) index =
       case c of
@@ -560,3 +558,16 @@ boardToFenString board =
       | otherwise = convertIndex $ enPassantTarget board
 
 printBoard = printFenString . boardToFenString
+
+getMove :: String -> String -> [Move] -> Either String Move
+getMove startingSquare targetSquare moves
+  | null filteredMoves = Left "Move does not exist"
+  | otherwise = Right $ head filteredMoves
+  where
+    filteredMoves =
+      filter
+        ( \(Move startingIdx targetIdx _) ->
+            convertIndex startingIdx == startingSquare
+              && convertIndex targetIdx == targetSquare
+        )
+        moves

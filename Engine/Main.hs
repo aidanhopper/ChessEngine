@@ -24,5 +24,5 @@ printBitboards (bb : bbs) = do
 main :: IO ()
 main = do
   let board = (\(Right x) -> x) $ parseBoard startFen
-  playGame board
+  print $ generatePseudoLegalMoves board
   return ()

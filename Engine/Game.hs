@@ -1,21 +1,8 @@
 module Game where
 
-import Data.Maybe (isNothing)
+import Data.Either (isLeft)
 import Move
 import Utils
-
-getMove :: [Move] -> String -> String -> Maybe Move
-getMove moves startingSquare targetSquare
-  | null filteredMoves = Nothing
-  | otherwise = Just $ head filteredMoves
-  where
-    filteredMoves =
-      filter
-        ( \(Move startingIdx targetIdx _) ->
-            convertIndex startingIdx == startingSquare
-              && convertIndex targetIdx == targetSquare
-        )
-        moves
 
 playGame :: Board -> IO ()
 playGame board = do
@@ -29,13 +16,12 @@ playGame board = do
   targetSquare <- getLine
 
   -- Grab the move
-  let move = getMove moves startingSquare targetSquare
+  let move = getMove startingSquare targetSquare moves
   print $ (\(Move s t _) -> (convertIndex s, convertIndex t)) <$> move
 
-  let newBoard = makeMove board <$> move
 
-  if isNothing newBoard
-    then do
-      putStrLn "Invalid move"
-      playGame board
-    else playGame $ (\(Just x) -> x) newBoard
+  -- if isLeft newBoard
+  --   then do
+  --     putStrLn "Invalid move"
+  --     playGame board
+  --   else playGame $ (\(Right x) -> x) newBoard
