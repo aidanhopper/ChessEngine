@@ -1,5 +1,8 @@
-
 import React from 'react';
+import Draggable from 'react-draggable';
+
+import { Fen } from './Fen'
+import parseFen from './Fen'
 
 type BoardProps = {
   fenString: string;
@@ -8,33 +11,44 @@ type BoardProps = {
   color2: string;
 }
 
-const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
+type PieceProps = {
+  imagePath: string;
+  tileSize: number;
+  index: number;
+}
 
+const Piece = ({ imagePath, tileSize, index }: PieceProps) => {
+  const posX = (index % 8) * tileSize;
+  const posY = (Math.floor(index / 8)) * tileSize;
+
+  return (
+    <Draggable bounds="parent" defaultPosition={{ x: posX, y: posY }}>
+      <div className="absolute"
+        style={{
+          transform: `translate(${posX}px, ${posY}px)`,
+        }}
+      >
+        <img className="pointer-events-none select-none" src={imagePath} alt="Piece" style={{ width: `${tileSize}px` }} />
+      </div>
+    </ Draggable>
+  );
+}
+
+const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
   const f: Fen = parseFen(fenString);
 
   const squares: string[] = []
 
   // Populate the squares list
-  f.piecePlacement.split("/").forEach((row: string) => {
-    let acc = 0;
-
+  f.piecePlacement.split("/").forEach((row) => {
     row.split('').forEach((char: string) => {
       if (!isNaN(Number(char))) {
-        acc += Number(char);
+        for (let i = 0; i < Number(char); i++) {
+          squares.push(' ');
+        }
       }
-
       else {
-        for (let i = 0; i < acc; i++) {
-          squares.push(' ');
-        }
-
         squares.push(char);
-      }
-
-      if (acc === 8) {
-        for (let i = 0; i < acc; i++) {
-          squares.push(' ');
-        }
       }
     });
   });
@@ -72,7 +86,22 @@ const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
   </>
 
   return (
-    <div className="flex flex-col">
+    <div className="flex-col bg-black inline-flex">
+      {
+        squares.map((piece, index) => {
+          if (piece !== ' ') {
+            const imagePath = piece.toLowerCase() === piece ?
+              `/assets/${piece}b.png` :
+              `/assets/${piece.toLowerCase()}w.png`;
+
+            return (
+              <Piece key={index} imagePath={imagePath} tileSize={tileSize} index={index} />
+            )
+          }
+
+          return <></>
+        })
+      }
       <Row1 />
       <Row2 />
       <Row1 />
@@ -85,4 +114,4 @@ const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
   );
 }
 
-export default {Board};
+export default Board;
