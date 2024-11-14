@@ -20,12 +20,14 @@
             haskell-language-server
             haskellPackages.HUnit
             haskellPackages.scotty
+            haskellPackages.wai-cors
             create-react-app
             nodejs_22
             python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.HUnit
               haskellPackages.scotty
+              haskellPackages.wai-cors
             ]))
           ] ++ (with pkgs.python312Packages; [
             pip

@@ -90,7 +90,7 @@ class Piece:
 class ChessBoard:
     def __init__(self):
         #self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-        self.fen = 'r4b1r/8/8/6Pp/4n3/8/PPPPPP1P/4K3 b KQkq - 0 1'
+        self.fen = 'rn3b1r/p2ppppp/q1b5/5kn1/1p1p4/4P1P1/P1PPP2P/RNBQKBNR b KQkq - 0 1'
         self.possible_moves = None
 
     @staticmethod

@@ -11,7 +11,7 @@ frontend/coverage
 frontend/build
 
 # misc
-frontend/.DS_Store
+frontend/public/assets/.DS_Store
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
