@@ -39,7 +39,8 @@ data MoveRequest = MoveRequest
 
 data MoveResponse = MoveResponse
   { startingSquare :: String,
-    targetSquare :: String
+    targetSquare :: String,
+    isCapture :: Bool
   }
   deriving (Show, Generic)
 
@@ -72,7 +73,12 @@ main = scotty 3001 $ do
       Right moves ->
         json $
           map
-            (\(Move s t _) -> MoveResponse (convertIndex s) (convertIndex t))
+            ( \(Move s t f) ->
+                MoveResponse
+                  (convertIndex s)
+                  (convertIndex t)
+                  (Utils.isCapture f)
+            )
             moves
       Left err -> json err
 

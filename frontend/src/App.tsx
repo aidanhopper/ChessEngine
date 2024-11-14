@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import Board from './Board';
 import { makeMove, possibleMoves } from './Query';
 
-const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+//const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+//const startFen = "8/8/8/4p3/3pP3/8/8/8 b - e3 0 1"
+const startFen = "r2qk1nr/2P5/8/8/8/8/2p5/RN1QK2R w KQkq - 0 1"
 
 const App = () => {
 
   const [fen, setFen] = useState<string>(startFen);
-  const [moves, setMoves] = useState<{ startingSquare: string, targetSquare: string }[]>([]);
+  const [moves, setMoves] = useState<{ startingSquare: string, targetSquare: string, isCapture: boolean }[]>([]);
 
   useEffect(() => {
     possibleMoves(startFen)
@@ -16,10 +18,10 @@ const App = () => {
       })
   }, [])
 
-  console.log(moves);
+  console.log(fen);
 
   return (
-    <>
+    <div className="flex">
       <Board
         fenString={fen}
         onMove={(start, target) => {
@@ -34,7 +36,7 @@ const App = () => {
         tileSize={100}
         color1="#769656"
         color2="#eeeed2" />
-    </>
+    </div>
   );
 }
 

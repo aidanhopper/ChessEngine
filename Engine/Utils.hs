@@ -241,6 +241,7 @@ data Flags = Flags
     isCapture :: Bool,
     castleRightsToRemove :: String,
     isEnPassant :: Bool,
+    isPawnPromotion :: Bool,
     isQueenSideCastle :: Bool,
     isKingSideCastle :: Bool
   }
@@ -255,6 +256,7 @@ emptyFlags =
     { isDoublePawnPush = False,
       isCapture = False,
       castleRightsToRemove = "",
+      isPawnPromotion = False,
       isEnPassant = False,
       isQueenSideCastle = False,
       isKingSideCastle = False
@@ -360,7 +362,7 @@ parseBoard str =
             (index + 1)
         'k' ->
           buildBoard
-            (blackBoard {blackKing = blackPawns blackBoard .|. magicNumber})
+            (blackBoard {blackKing = blackKing blackBoard .|. magicNumber})
             cs
             (index + 1)
         'q' ->
