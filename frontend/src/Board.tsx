@@ -1,40 +1,171 @@
-import React from 'react';
-import Draggable from 'react-draggable';
+import { useState } from 'react';
+import Piece from './Piece'
+
 
 import { Fen } from './Fen'
 import parseFen from './Fen'
+
+const playMoveSound = () => {
+  new Audio('/sounds/move.mp3')
+    .play()
+    .catch(error => console.error('Move sound failed: ', error));
+}
+
+const playCaptureSound = () => {
+  new Audio('/sounds/capture.mp3')
+    .play()
+    .catch(error => console.error('Capture sound failed: ', error));
+}
+
+const fromPosition = (pos: string) => {
+  if (pos.length !== 2) {
+    throw new Error("Input position is invalid.");
+  }
+
+  const colChar = pos[0];
+  const rowChar = pos[1];
+
+  let col = -1;
+  switch (colChar) {
+    case 'a':
+      col = 0;
+      break;
+    case 'b':
+      col = 1;
+      break;
+    case 'c':
+      col = 2;
+      break;
+    case 'd':
+      col = 3;
+      break;
+    case 'e':
+      col = 4;
+      break;
+    case 'f':
+      col = 5;
+      break;
+    case 'g':
+      col = 6;
+      break;
+    case 'h':
+      col = 7;
+      break;
+  }
+
+  let row = -1;
+  switch (rowChar) {
+    case '1':
+      row = 7;
+      break;
+    case '2':
+      row = 6;
+      break;
+    case '3':
+      row = 5;
+      break;
+    case '4':
+      row = 4;
+      break;
+    case '5':
+      row = 3;
+      break;
+    case '6':
+      row = 2;
+      break;
+    case '7':
+      row = 1;
+      break;
+    case '8':
+      row = 0;
+      break;
+  }
+
+  if (row === -1 || col === -1) {
+    throw new Error("Input position is invalid.");
+  }
+
+  return (row * 8) + col
+}
+
+const toPosition = (index: number) => {
+  if (index < 0 || index > 63) {
+    throw new Error("Input index is invalid.");
+  }
+
+  let col = '';
+  switch (index % 8) {
+    case 0:
+      col = 'a';
+      break;
+    case 1:
+      col = 'b'
+      break;
+    case 2:
+      col = 'c';
+      break;
+    case 3:
+      col = 'd';
+      break;
+    case 4:
+      col = 'e';
+      break;
+    case 5:
+      col = 'f';
+      break;
+    case 6:
+      col = 'g';
+      break;
+    case 7:
+      col = 'h';
+      break;
+  }
+
+  let row = '';
+  switch (Math.floor(index / 8)) {
+    case 0:
+      row = '8';
+      break;
+    case 1:
+      row = '7'
+      break;
+    case 2:
+      row = '6';
+      break;
+    case 3:
+      row = '5';
+      break;
+    case 4:
+      row = '4';
+      break;
+    case 5:
+      row = '3';
+      break;
+    case 6:
+      row = '2';
+      break;
+    case 7:
+      row = '1';
+      break;
+  }
+
+  return col + row;
+}
 
 type BoardProps = {
   fenString: string;
   tileSize: number;
   color1: string;
   color2: string;
+  validMoves?: { startingSquare: string, targetSquare: string }[];
+  onMove?: (start: string, target: string) => void;
 }
 
-type PieceProps = {
-  imagePath: string;
-  tileSize: number;
-  index: number;
-}
+const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove }: BoardProps) => {
 
-const Piece = ({ imagePath, tileSize, index }: PieceProps) => {
-  const posX = (index % 8) * tileSize;
-  const posY = (Math.floor(index / 8)) * tileSize;
+  const [hoverIndex, setHoverIndex] = useState(-1);
+  const [pickupIndex, setPickupIndex] = useState(-1);
 
-  return (
-    <Draggable bounds="parent" defaultPosition={{ x: posX, y: posY }}>
-      <div className="absolute"
-        style={{
-          transform: `translate(${posX}px, ${posY}px)`,
-        }}
-      >
-        <img className="pointer-events-none select-none" src={imagePath} alt="Piece" style={{ width: `${tileSize}px` }} />
-      </div>
-    </ Draggable>
-  );
-}
-
-const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
   const f: Fen = parseFen(fenString);
 
   const squares: string[] = []
@@ -95,12 +226,88 @@ const Board = ({ fenString, tileSize, color1, color2 }: BoardProps) => {
               `/assets/${piece.toLowerCase()}w.png`;
 
             return (
-              <Piece key={index} imagePath={imagePath} tileSize={tileSize} index={index} />
-            )
+              <Piece
+                key={index}
+                onPickup={(e, index) => {
+                  setHoverIndex(index);
+                  setPickupIndex(index);
+                }}
+                onPutdown={(e, data, index) => {
+                  const start = toPosition(index);
+                  const target = toPosition(hoverIndex);
+
+                  if (onMove) {
+                    onMove(start, target);
+                  }
+
+                  setHoverIndex(-1);
+                  setPickupIndex(-1);
+
+                  if (validMoves) {
+                    validMoves.forEach(elem => {
+                      if (elem.startingSquare === start && elem.targetSquare === target) {
+                        if (squares[hoverIndex] === ' ') {
+                          playMoveSound();
+                        }
+                        else {
+                          playCaptureSound();
+                        }
+                      }
+                    })
+                  }
+                }}
+                onDrag={(e, data) => {
+                  const _hoverIndex =
+                    Math.floor((data.x + (tileSize / 2)) / tileSize) +
+                    (Math.floor((data.y + (tileSize / 2)) / tileSize) * 8);
+                  setHoverIndex(_hoverIndex);
+                }}
+                imagePath={imagePath}
+                tileSize={tileSize}
+                index={index} />
+            );
           }
 
           return <></>
         })
+      }
+      {
+        validMoves !== undefined && pickupIndex !== -1 &&
+        validMoves.map(elem => {
+          const startIndex = fromPosition(elem.startingSquare);
+          if (startIndex === pickupIndex) {
+            const sqSize = tileSize / 3;
+            const targetIndex = fromPosition(elem.targetSquare);
+            const posX = (targetIndex % 8) * tileSize +
+              Math.floor(tileSize / 2 - sqSize / 2);
+            const posY = (Math.floor(targetIndex / 8)) * tileSize +
+              Math.floor(tileSize / 2 - sqSize / 2);
+            return (
+              <div
+                className="absolute bg-green-700 rounded-full"
+                style={{
+                  transform: `translate(${posX}px, ${posY}px)`,
+                  width: `${Math.floor(sqSize)}px`,
+                  height: `${Math.floor(sqSize)}px`,
+                  boxShadow: `0px 0px 5px rgba(0, 0, 0, 0.4)`,
+                }}>
+              </div>
+            );
+          }
+          return <></>
+        })
+      }
+      {
+        hoverIndex !== -1 &&
+        <div
+          className="absolute border-blue-700"
+          style={{
+            width: `${tileSize}px`,
+            height: `${tileSize}px`,
+            transform: `translate(${(hoverIndex % 8) * tileSize}px, ${(Math.floor(hoverIndex / 8)) * tileSize}px)`,
+            borderWidth: `${tileSize / 12}px`
+          }}>
+        </div>
       }
       <Row1 />
       <Row2 />
