@@ -247,7 +247,6 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove }: Boar
                     if (validMoves) {
                       validMoves.forEach(elem => {
                         if (elem.startingSquare === start && elem.targetSquare === target) {
-                          console.log(elem)
                           if (elem.isCapture) {
                             playCaptureSound();
                           }

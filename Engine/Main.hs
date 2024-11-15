@@ -52,13 +52,13 @@ instance ToJSON MoveResponse
 
 instance FromJSON MoveResponse
 
-makeMoveFen :: String -> String -> String -> Either String String
+makeMoveFen :: String -> String -> String -> Either String [String]
 makeMoveFen f s t = do
   board <- parseBoard f
-  let moves = generatePseudoLegalMoves board
+  let moves = generateMoves board
   move <- getMove s t moves
-  let newBoard = makeMove move board
-  return $ boardToFenString newBoard
+  let newBoards = makeMove move board
+  return $ map boardToFenString newBoards
 
 main :: IO ()
 main = scotty 3001 $ do
@@ -69,7 +69,7 @@ main = scotty 3001 $ do
 
   get "/possible-moves" $ do
     fen <- queryParam "fen"
-    case Chess.generatePseudoLegalMoves <$> parseBoard fen of
+    case Chess.generateMoves <$> parseBoard fen of
       Right moves ->
         json $
           map
@@ -86,7 +86,7 @@ main = scotty 3001 $ do
     fen <- queryParam "fen"
     startingSqr <- queryParam "start"
     targetSqr <- queryParam "target"
-    case makeMoveFen fen startingSqr targetSqr of
+    case trace (show $ makeMoveFen fen startingSqr targetSqr) makeMoveFen fen startingSqr targetSqr of
       Right newFen -> json newFen
       Left err -> json err
 

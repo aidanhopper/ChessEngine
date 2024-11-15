@@ -283,7 +283,8 @@ generateKnightMoves board =
     constructKnightMoves bb
       | bb == 0 = []
       | otherwise =
-          processPiece knightMoves
+          processPiece
+            knightMoves
             ++ constructKnightMoves (bb .&. complement singleKnight)
       where
         index = countTrailingZeros bb
@@ -303,7 +304,7 @@ generateKnightMoves board =
                   complement fileFGHMask
               | popCount (singleKnight .&. fileFGHMask) == 1 =
                   complement fileABCMask
-              | otherwise = 1
+              | otherwise = complement 0
 
         processPiece :: Bitboard -> [Move]
         processPiece bb
@@ -493,9 +494,14 @@ generateRookMoves board
                           { isCapture =
                               popCount (bit targetIndex .&. inactivePieces) == 1,
                             castleRightsToRemove =
-                              case activeSide of
-                                "w" -> "KQ"
-                                "b" -> "kq"
+                              if index == 0
+                                || index == 7
+                                || index == 63
+                                || index == 56
+                                then case activeSide of
+                                  "w" -> "KQ"
+                                  "b" -> "kq"
+                                else ""
                           }
                     }
                     : f (movebb .&. complement (bit targetIndex))
@@ -598,13 +604,22 @@ generatePseudoLegalMoves board =
     ++ generateQueenMoves board
 
 generateMoves :: Board -> [Move]
-generateMoves = generatePseudoLegalMoves
+generateMoves board = filter isSafe $ generatePseudoLegalMoves board
+  where
+    kingIndex
+      | sideToMove board == "w" = countTrailingZeros $ whiteKing board
+      | sideToMove board == "b" = countTrailingZeros $ blackKing board
+    isSafe m = kingIndex `notElem` targets
+      where
+        responseBoards = makeMove m board
+        responseMoves = concatMap generatePseudoLegalMoves responseBoards
+        targets = map targetIndex responseMoves
 
 getPossibleMoves :: String -> Either String [Move]
 getPossibleMoves fen = generateMoves <$> parseBoard fen
 
-makeMove :: Move -> Board -> Board
-makeMove move board = updatedBoard
+makeMove :: Move -> Board -> [Board]
+makeMove move board = updatedBoards
   where
     hasIndex bb index = popCount (bb .&. bit index) == 1
 
@@ -687,34 +702,117 @@ makeMove move board = updatedBoard
 
     updatedCaptureBB = captureBB .&. complement (bit targetIdx)
 
-    updatedBoard =
-      board
-        { whiteKing = updatedWhiteKing,
-          whiteQueens = updatedWhiteQueens,
-          whiteKnights = updatedWhiteKnights,
-          whiteBishops = updatedWhiteBishops,
-          whiteRooks = updatedWhiteRooks,
-          whitePawns = updatedWhitePawns,
-          blackKing = updatedBlackKing,
-          blackQueens = updatedBlackQueens,
-          blackKnights = updatedBlackKnights,
-          blackBishops = updatedBlackBishops,
-          blackRooks = updatedBlackRooks,
-          blackPawns = updatedBlackPawns,
-          sideToMove =
-            case sideToMove board of
-              "w" -> "b"
-              "b" -> "w",
-          castleRights = updatedCastleRights,
-          enPassantTarget =
-            if not (isDoublePawnPush moveFlags)
-              then -1
-              else case sideToMove board of
-                "w" -> targetIdx - 8
-                "b" -> targetIdx + 8
-        }
+    updatedBoards
+      | isPawnPromotion moveFlags =
+          [ promoToQueenBoard,
+            promoToKnightBoard,
+            promoToRookBoard,
+            promoToBishopBoard
+          ]
+      | otherwise =
+          [ board
+              { whiteKing = updatedWhiteKing,
+                whiteQueens = updatedWhiteQueens,
+                whiteKnights = updatedWhiteKnights,
+                whiteBishops = updatedWhiteBishops,
+                whiteRooks = updatedWhiteRooks,
+                whitePawns = updatedWhitePawns,
+                blackKing = updatedBlackKing,
+                blackQueens = updatedBlackQueens,
+                blackKnights = updatedBlackKnights,
+                blackBishops = updatedBlackBishops,
+                blackRooks = updatedBlackRooks,
+                blackPawns = updatedBlackPawns,
+                sideToMove =
+                  case sideToMove board of
+                    "w" -> "b"
+                    "b" -> "w",
+                castleRights = updatedCastleRights,
+                enPassantTarget =
+                  if not (isDoublePawnPush moveFlags)
+                    then -1
+                    else case sideToMove board of
+                      "w" -> targetIdx - 8
+                      "b" -> targetIdx + 8
+              }
+          ]
       where
         moveFlags = flags move
+
+        promoBoard =
+          board
+            { whitePawns =
+                if activeSide == "w"
+                  then whitePawns board .&. complement (bit startingIdx)
+                  else whitePawns board,
+              blackPawns =
+                if activeSide == "b"
+                  then blackPawns board .&. complement (bit startingIdx)
+                  else blackPawns board,
+              whiteKing = updatedWhiteKing,
+              whiteQueens = updatedWhiteQueens,
+              whiteKnights = updatedWhiteKnights,
+              whiteBishops = updatedWhiteBishops,
+              whiteRooks = updatedWhiteRooks,
+              blackKing = updatedBlackKing,
+              blackQueens = updatedBlackQueens,
+              blackKnights = updatedBlackKnights,
+              blackBishops = updatedBlackBishops,
+              blackRooks = updatedBlackRooks,
+              sideToMove =
+                case sideToMove board of
+                  "w" -> "b"
+                  "b" -> "w",
+              enPassantTarget = -1
+            }
+
+        promoToQueenBoard =
+          promoBoard
+            { whiteQueens =
+                if activeSide == "w"
+                  then whiteQueens board .|. bit targetIdx
+                  else whiteQueens board,
+              blackQueens =
+                if activeSide == "b"
+                  then blackQueens board .|. bit targetIdx
+                  else blackQueens board
+            }
+
+        promoToRookBoard =
+          promoBoard
+            { whiteRooks =
+                if activeSide == "w"
+                  then whiteRooks board .|. bit targetIdx
+                  else whiteRooks board,
+              blackRooks =
+                if activeSide == "b"
+                  then blackRooks board .|. bit targetIdx
+                  else blackRooks board
+            }
+
+        promoToBishopBoard =
+          promoBoard
+            { whiteBishops =
+                if activeSide == "w"
+                  then whiteBishops board .|. bit targetIdx
+                  else whiteBishops board,
+              blackBishops =
+                if activeSide == "b"
+                  then blackBishops board .|. bit targetIdx
+                  else blackBishops board
+            }
+
+        promoToKnightBoard =
+          promoBoard
+            { whiteKnights =
+                if activeSide == "w"
+                  then whiteKnights board .|. bit targetIdx
+                  else whiteKnights board,
+              blackKnights =
+                if activeSide == "b"
+                  then blackKnights board .|. bit targetIdx
+                  else blackKnights board
+            }
 
         updateBB moving capture def
           | moving = updatedMovingBB
@@ -727,14 +825,11 @@ makeMove move board = updatedBoard
             captureBBIsWhiteKing
             (whiteKing board)
 
-        updatedWhiteQueens
-          | isPawnPromotion moveFlags && activeSide == "w" =
-              whiteQueens board .|. bit targetIdx
-          | otherwise =
-              updateBB
-                movingBBIsWhiteQueens
-                captureBBIsWhiteQueens
-                (whiteQueens board)
+        updatedWhiteQueens =
+          updateBB
+            movingBBIsWhiteQueens
+            captureBBIsWhiteQueens
+            (whiteQueens board)
 
         updatedWhiteKnights =
           updateBB
@@ -760,9 +855,6 @@ makeMove move board = updatedBoard
                 (whiteRooks board)
 
         updatedWhitePawns
-          | isPawnPromotion moveFlags && activeSide == "w" =
-              whitePawns board
-                .&. complement (bit startingIdx)
           | not (isEnPassant moveFlags) =
               updateBB
                 movingBBIsWhitePawns
@@ -779,14 +871,11 @@ makeMove move board = updatedBoard
             captureBBIsBlackKing
             (blackKing board)
 
-        updatedBlackQueens
-          | isPawnPromotion moveFlags && activeSide == "b" =
-              blackQueens board .|. bit targetIdx
-          | otherwise =
-              updateBB
-                movingBBIsBlackQueens
-                captureBBIsBlackQueens
-                (blackQueens board)
+        updatedBlackQueens =
+          updateBB
+            movingBBIsBlackQueens
+            captureBBIsBlackQueens
+            (blackQueens board)
 
         updatedBlackKnights =
           updateBB
@@ -812,9 +901,6 @@ makeMove move board = updatedBoard
                 (blackRooks board)
 
         updatedBlackPawns
-          | isPawnPromotion moveFlags && activeSide == "b" =
-              blackPawns board
-                .&. complement (bit startingIdx)
           | not (isEnPassant moveFlags) =
               updateBB
                 movingBBIsBlackPawns
@@ -828,6 +914,7 @@ makeMove move board = updatedBoard
         updatedCastleRights
           | castleRights board == "-" = "-"
           | castleRightsToRemove moveFlags == "" = castleRights board
+          | helper (castleRights board) == "" = "-"
           | otherwise = helper (castleRights board)
           where
             helper [] = []
