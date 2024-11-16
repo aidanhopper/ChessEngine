@@ -159,9 +159,10 @@ type BoardProps = {
   color2: string;
   validMoves?: { startingSquare: string, targetSquare: string, isCapture: boolean }[];
   onMove?: (start: string, target: string) => void;
+  disabledSides: string;
 }
 
-const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove }: BoardProps) => {
+const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove, disabledSides }: BoardProps) => {
 
   const [hoverIndex, setHoverIndex] = useState(-1);
   const [pickupIndex, setPickupIndex] = useState(-1);
@@ -217,108 +218,128 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove }: Boar
   </>
 
   return (
-    <div className="flex">
-      <div className="flex-col absolute">
-        {
-          squares.map((piece, index) => {
-            if (piece !== ' ') {
-              const imagePath = piece.toLowerCase() === piece ?
-                `/assets/${piece}b.png` :
-                `/assets/${piece.toLowerCase()}w.png`;
+    <div className="flex-col absolute ">
+      {
+        squares.map((piece, index) => {
+          if (piece !== ' ') {
+            const side = piece.toLowerCase() === piece ? "b" : "w";
+            const imagePath = `/assets/${piece}${side}.png`;
+            const pieceIsDisabled =
+              disabledSides.split('').filter(e => side === e)
+                .length !== 0;
 
-              return (
-                <Piece
-                  key={index}
-                  onPickup={(e, index) => {
-                    setHoverIndex(index);
-                    setPickupIndex(index);
-                  }}
-                  onPutdown={(e, data, index) => {
-                    const start = toPosition(index);
-                    const target = toPosition(hoverIndex);
+            return (
+              <Piece
+                key={index}
+                disabled={pieceIsDisabled}
+                hoverIndex={hoverIndex}
+                onPickup={(e, index) => {
+                  setHoverIndex(index);
+                  setPickupIndex(index);
+                }}
+                onPutdown={(e, data, index) => {
+                  const start = toPosition(index);
+                  const target = toPosition(hoverIndex);
 
-                    if (onMove) {
-                      onMove(start, target);
-                    }
+                  if (onMove) {
+                    onMove(start, target);
+                  }
 
-                    setHoverIndex(-1);
-                    setPickupIndex(-1);
+                  setHoverIndex(-1);
+                  setPickupIndex(-1);
 
-                    if (validMoves) {
-                      validMoves.forEach(elem => {
-                        if (elem.startingSquare === start && elem.targetSquare === target) {
-                          if (elem.isCapture) {
-                            playCaptureSound();
-                          }
-                          else {
-                            playMoveSound();
-                          }
+                  if (validMoves) {
+                    validMoves.forEach(elem => {
+                      if (elem.startingSquare === start &&
+                        elem.targetSquare === target) {
+                        if (elem.isCapture) {
+                          playCaptureSound();
                         }
-                      })
-                    }
-                  }}
-                  onDrag={(e, data) => {
-                    const _hoverIndex =
-                      Math.floor((data.x + (tileSize / 2)) / tileSize) +
-                      (Math.floor((data.y + (tileSize / 2)) / tileSize) * 8);
-                    setHoverIndex(_hoverIndex);
-                  }}
-                  imagePath={imagePath}
-                  tileSize={tileSize}
-                  index={index} />
-              );
-            }
+                        else {
+                          playMoveSound();
+                        }
+                      }
+                    })
+                  }
+                }}
+                onDrag={(e, data) => {
+                  const _hoverIndex =
+                    Math.floor((data.x + (tileSize / 2)) / tileSize) +
+                    (Math.floor((data.y + (tileSize / 2)) / tileSize) * 8);
+                  setHoverIndex(_hoverIndex);
+                }}
+                isValidMove={startingIndex => {
+                  const start = toPosition(startingIndex);
+                  const target = toPosition(hoverIndex);
 
-            return <></>
-          })
-        }
-        {
-          validMoves !== undefined && pickupIndex !== -1 &&
-          validMoves.map(elem => {
-            const startIndex = fromPosition(elem.startingSquare);
-            if (startIndex === pickupIndex) {
-              const sqSize = tileSize / 3;
-              const targetIndex = fromPosition(elem.targetSquare);
-              const posX = (targetIndex % 8) * tileSize +
-                Math.floor(tileSize / 2 - sqSize / 2);
-              const posY = (Math.floor(targetIndex / 8)) * tileSize +
-                Math.floor(tileSize / 2 - sqSize / 2);
-              return (
-                <div
-                  className="absolute bg-green-700 rounded-full"
-                  style={{
-                    transform: `translate(${posX}px, ${posY}px)`,
-                    width: `${Math.floor(sqSize)}px`,
-                    height: `${Math.floor(sqSize)}px`,
-                    boxShadow: `0px 0px 5px rgba(0, 0, 0, 0.4)`,
-                  }}>
-                </div>
-              );
-            }
-            return <></>
-          })
-        }
-        {
-          hoverIndex !== -1 &&
-          <div
-            className="absolute border-blue-700"
-            style={{
-              width: `${tileSize}px`,
-              height: `${tileSize}px`,
-              transform: `translate(${(hoverIndex % 8) * tileSize}px, ${(Math.floor(hoverIndex / 8)) * tileSize}px)`,
-              borderWidth: `${tileSize / 12}px`
-            }}>
-          </div>
-        }
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-      </div>
+                  if (validMoves) {
+                    let isValid = false;
+                    validMoves.forEach(elem => {
+                      if (elem.startingSquare === start &&
+                        elem.targetSquare === target) {
+                        isValid = true;
+                      }
+                    })
+                    return isValid;
+                  }
+
+                  return true;
+                }}
+                imagePath={imagePath}
+                tileSize={tileSize}
+                index={index} />
+            );
+          }
+
+          return <></>
+        })
+      }
+      {
+        validMoves !== undefined && pickupIndex !== -1 &&
+        validMoves.map(elem => {
+          const startIndex = fromPosition(elem.startingSquare);
+          if (startIndex === pickupIndex) {
+            const sqSize = tileSize / 3;
+            const targetIndex = fromPosition(elem.targetSquare);
+            const posX = (targetIndex % 8) * tileSize +
+              Math.floor(tileSize / 2 - sqSize / 2);
+            const posY = (Math.floor(targetIndex / 8)) * tileSize +
+              Math.floor(tileSize / 2 - sqSize / 2);
+            return (
+              <div
+                className="absolute bg-green-700 rounded-full"
+                style={{
+                  transform: `translate(${posX}px, ${posY}px)`,
+                  width: `${Math.floor(sqSize)}px`,
+                  height: `${Math.floor(sqSize)}px`,
+                  boxShadow: `0px 0px 5px rgba(0, 0, 0, 0.4)`,
+                }}>
+              </div>
+            );
+          }
+          return <></>
+        })
+      }
+      {
+        hoverIndex !== -1 &&
+        <div
+          className="absolute border-blue-700"
+          style={{
+            width: `${tileSize}px`,
+            height: `${tileSize}px`,
+            transform: `translate(${(hoverIndex % 8) * tileSize}px, ${(Math.floor(hoverIndex / 8)) * tileSize}px)`,
+            borderWidth: `${tileSize / 12}px`
+          }}>
+        </div>
+      }
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
     </div>
   );
 }

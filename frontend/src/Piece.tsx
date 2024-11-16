@@ -5,16 +5,23 @@ type PieceProps = {
   imagePath: string;
   tileSize: number;
   index: number;
+  hoverIndex: number;
+  isValidMove: (start: number) => boolean;
+  disabled?: boolean,
   onPickup?: (e: MouseEvent | TouchEvent, index: number) => void;
   onPutdown?: (e: MouseEvent | TouchEvent, data: { x: number; y: number }, index: number) => void;
   onDrag?: (e: MouseEvent | TouchEvent, data: { x: number; y: number }) => void;
 }
 
-const Piece = ({ imagePath, tileSize, index, onPickup, onPutdown, onDrag }: PieceProps) => {
+const toPos = (index: number, tileSize: number) => {
   const posX = (index % 8) * tileSize;
   const posY = (Math.floor(index / 8)) * tileSize;
+  return { x: posX, y: posY };
+}
 
-  const defaultPosition = { x: posX, y: posY };
+const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, onPickup, onPutdown, onDrag }: PieceProps) => {
+
+  const defaultPosition = toPos(index, tileSize);
 
   const [position, setPosition] = useState(defaultPosition);
 
@@ -31,13 +38,15 @@ const Piece = ({ imagePath, tileSize, index, onPickup, onPutdown, onDrag }: Piec
     if (onPutdown) {
       onPutdown(e as MouseEvent | TouchEvent, { x: data.x, y: data.y }, index)
     }
+
     setZ(0)
 
-    // Use timeout to stop piece flickering
-    setTimeout(() => {
-      setPosition(defaultPosition);
-    }, 10)
-
+    if (isValidMove(index)) {
+      setPosition(toPos(hoverIndex, tileSize));
+    }
+    else {
+      setPosition(defaultPosition)
+    }
   }
 
   const handleDrag: DraggableEventHandler = (e, data) => {
@@ -49,6 +58,7 @@ const Piece = ({ imagePath, tileSize, index, onPickup, onPutdown, onDrag }: Piec
 
   return (
     <Draggable
+      disabled={disabled}
       onStart={handlePickup}
       onStop={handlePutdown}
       onDrag={handleDrag}

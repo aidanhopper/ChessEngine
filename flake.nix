@@ -11,21 +11,33 @@
       });
     in
     {
-      devShells = forEachSupportedSystem ({ pkgs }: {
+      packages = forEachSupportedSystem ({ pkgs }: {
+        chessEngine = pkgs.stdenv.mkDerivation {
+          name = "chessEngine";
+          src = ./frontend;
+          buildInputs = with pkgs; [
+            (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
+              haskellPackages.scotty
+              haskellPackages.wai-cors
+            ]))
+          ];
+          buildPhase = "ghc -o engine ./Main.hs";
+          installPhase = "mkdir -p $out/bin; cp engine $out/bin/engine";
+        };
+      });
 
+      devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
           packages = with pkgs; [
             jq
             cabal-install
             haskell-language-server
-            haskellPackages.HUnit
             haskellPackages.scotty
             haskellPackages.wai-cors
             create-react-app
             nodejs_22
             python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
-              haskellPackages.HUnit
               haskellPackages.scotty
               haskellPackages.wai-cors
             ]))

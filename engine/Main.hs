@@ -5,6 +5,7 @@ module Main where
 
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON, decode, encode)
+import Data.Bits
 import Data.Text.Lazy (Text, pack)
 import Debug.Trace
 import Evaluate
@@ -69,7 +70,8 @@ main = scotty 3001 $ do
 
   get "/possible-moves" $ do
     fen <- queryParam "fen"
-    case Chess.generateMoves <$> parseBoard fen of
+    let board = parseBoard fen
+    case Chess.generateMoves <$> board of
       Right moves ->
         json $
           map
@@ -86,9 +88,6 @@ main = scotty 3001 $ do
     fen <- queryParam "fen"
     startingSqr <- queryParam "start"
     targetSqr <- queryParam "target"
-    case trace (show $ makeMoveFen fen startingSqr targetSqr) makeMoveFen fen startingSqr targetSqr of
+    case makeMoveFen fen startingSqr targetSqr of
       Right newFen -> json newFen
       Left err -> json err
-
--- find the move in move generator
---      moves Chess.generatePseudoLegalMoves <$> parseBoard (fen moveReq)

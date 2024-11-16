@@ -552,7 +552,7 @@ generateBishopMoves board
 generateQueenMoves :: Board -> [Move]
 generateQueenMoves board
   | activeQueens == 0 = []
-  | otherwise = constructQueenMoves moves
+  | otherwise = allQueenMoves activeQueens
   where
     activeSide = sideToMove board
     emptySquares = complement $ allPieces board
@@ -571,28 +571,30 @@ generateQueenMoves board
       | activeSide == "w" = whitePieces board
       | otherwise = blackPieces board
 
-    orthogonalBlockers = allPieces board .&. orthogonalBlockerMasks ! index
-    diagonalBlockers = allPieces board .&. diagonalBlockerMasks ! index
-
-    orthogonalMoves = getOrthogonalMovesBitboard index orthogonalBlockers
-    diagonalMoves = getDiagonalMovesBitboard index diagonalBlockers
-
-    moves = (orthogonalMoves .|. diagonalMoves) .&. complement activePieces
-
-    constructQueenMoves bb
+    allQueenMoves bb
       | bb == 0 = []
-      | otherwise =
-          let targetIndex = countTrailingZeros bb
-           in Move
-                { startingIndex = index,
-                  targetIndex = targetIndex,
-                  flags =
-                    emptyFlags
-                      { isCapture =
-                          popCount (bit targetIndex .&. inactivePieces) == 1
-                      }
-                }
-                : constructQueenMoves (bb .&. complement (bit targetIndex))
+      | otherwise = f moves ++ allQueenMoves (bb .&. complement (bit index))
+      where
+        index = countTrailingZeros bb
+        orthogonalBlockers = allPieces board .&. orthogonalBlockerMasks ! index
+        diagonalBlockers = allPieces board .&. diagonalBlockerMasks ! index
+        orthogonalMoves = getOrthogonalMovesBitboard index orthogonalBlockers
+        diagonalMoves = getDiagonalMovesBitboard index diagonalBlockers
+        moves = (orthogonalMoves .|. diagonalMoves) .&. complement activePieces
+        f bb
+          | bb == 0 = []
+          | otherwise =
+              let targetIndex = countTrailingZeros bb
+               in Move
+                    { startingIndex = index,
+                      targetIndex = targetIndex,
+                      flags =
+                        emptyFlags
+                          { isCapture =
+                              popCount (bit targetIndex .&. inactivePieces) == 1
+                          }
+                    }
+                    : f (bb .&. complement (bit targetIndex))
 
 generatePseudoLegalMoves :: Board -> [Move]
 generatePseudoLegalMoves board =
@@ -606,14 +608,24 @@ generatePseudoLegalMoves board =
 generateMoves :: Board -> [Move]
 generateMoves board = filter isSafe $ generatePseudoLegalMoves board
   where
-    kingIndex
-      | sideToMove board == "w" = countTrailingZeros $ whiteKing board
-      | sideToMove board == "b" = countTrailingZeros $ blackKing board
-    isSafe m = kingIndex `notElem` targets
+    isSafe m =
+      kingIndex
+        `notElem` targetIndexes
       where
         responseBoards = makeMove m board
-        responseMoves = concatMap generatePseudoLegalMoves responseBoards
-        targets = map targetIndex responseMoves
+        kingIndex
+          | sideToMove board == "w" =
+              countTrailingZeros (whiteKing (head responseBoards))
+          | sideToMove board == "b" =
+              countTrailingZeros (blackKing (head responseBoards))
+
+        -- Convert to fen because move generation breaks for this string.
+        -- "3Qk3/8/3Q4/8/8/8/8/8 b - - 0 1"
+        -- The make move function does not properly set the state of the
+        -- board.
+        fen = boardToFenString $ head responseBoards --
+        responseMoves = generatePseudoLegalMoves $ (\(Right x) -> x) $ parseBoard fen
+        targetIndexes = map targetIndex responseMoves
 
 getPossibleMoves :: String -> Either String [Move]
 getPossibleMoves fen = generateMoves <$> parseBoard fen
