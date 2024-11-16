@@ -11,7 +11,6 @@ import Debug.Trace
 import Evaluate
 import Fen
 import GHC.Generics
-import Game
 import Move as Chess
 import Network.Wai (Middleware)
 import Network.Wai.Middleware.Cors

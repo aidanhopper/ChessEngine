@@ -11,18 +11,24 @@
       });
     in
     {
+
       packages = forEachSupportedSystem ({ pkgs }: {
-        chessEngine = pkgs.stdenv.mkDerivation {
-          name = "chessEngine";
-          src = ./frontend;
+        engine = pkgs.stdenv.mkDerivation {
+          name = "engine";
+          src = ./engine; 
           buildInputs = with pkgs; [
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.scotty
               haskellPackages.wai-cors
             ]))
           ];
-          buildPhase = "ghc -o engine ./Main.hs";
-          installPhase = "mkdir -p $out/bin; cp engine $out/bin/engine";
+          buildPhase = ''
+            ghc Main.hs -o engine
+          '';
+          installPhase = ''
+            mkdir -p $out/bin
+            cp engine $out/bin/engine
+          '';
         };
       });
 
