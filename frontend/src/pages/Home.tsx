@@ -10,7 +10,11 @@ const Home = () => {
       <div className="m-auto">
         <button
           onClick={() => {
-            createLobby().then(res => navigate(`/${res}`));
+            createLobby().then(res => {
+              if (res.ok) {
+                navigate(`/${res.lobby}`)
+              }
+            });
           }}
           className="border rounded border-black p-2 hover:bg-black
           hover:text-white transition-colors duration-100 ease-in-out">

@@ -7,9 +7,6 @@ export const possibleMoves = async (fen: string) => {
   const response = await fetch(url, {
     method: 'GET',
     mode: 'cors',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
   })
     .then(response => response.json());
 
@@ -22,9 +19,6 @@ export const makeMove = async (fen: string, start: string, target: string) => {
   const response = await fetch(url, {
     method: 'GET',
     mode: 'cors',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
   })
     .then(response => response.json())
 
@@ -35,9 +29,6 @@ export const createLobby = async () => {
   const response = await fetch(`${BACKEND_URL}/api/v1/create-lobby`, {
     method: 'GET',
     mode: 'cors',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
   })
     .then(response => response.json())
 
@@ -53,27 +44,17 @@ export const isLobbyAlive = async (lobby: string | undefined) => {
   const response = await fetch(url, {
     method: 'GET',
     mode: 'cors',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
   })
     .then(response => response.json());
 
   return response
 }
 
-export const present = async (lobby: string | undefined, sessionId: string) => {
-  if (!lobby) {
-    return "Lobby does not exist";
-  }
-
+export const present = async (lobby: string, sessionId: string) => {
   const url = `${BACKEND_URL}/api/v1/present?lobby=${lobby}&session=${sessionId}`;
   const response = await fetch(url, {
     method: 'GET',
     mode: 'cors',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
   })
     .then(response => response.json());
 

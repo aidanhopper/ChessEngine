@@ -3,11 +3,6 @@ import Board from './Board';
 import parseFen from './Fen';
 import { makeMove, possibleMoves } from './Query';
 
-const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-//const startFen = "8/8/8/4p3/3pP3/8/8/8 b - e3 0 1"
-//const startFen = "r2qk1nr/2P5/8/8/8/8/2p5/RN1QK2R w KQkq - 0 1"
-//const startFen = "3Qk3/8/8/8/8/8/8/3Q1Q2 b - - 0 1";
-
 const sideToMove = (fen: string) => {
   return parseFen(fen).sideToMove;
 }
@@ -69,28 +64,29 @@ const PromoPieceSelection = ({ side, tileSize, onSelect }:
 
 type GameProps = {
   tileSize: number;
+  onWhiteMove: (start: string, end: string) => void;
+  onBlackMove: (start: string, end: string) => void;
+  validMoves: {
+    startingSquare: string;
+    targetSquare: string;
+    isCapture: boolean;
+  }[];
+  disabledSides: string;
+  fen: string;
   className?: string;
 }
 
 const Game = ({
   tileSize,
-  className
+  onWhiteMove,
+  onBlackMove,
+  validMoves,
+  disabledSides,
+  fen,
+  className,
 }: GameProps) => {
-  const [fen, setFen] = useState<string>(startFen);
-  const [moves, setMoves] = useState<{
-    startingSquare: string,
-    targetSquare: string, isCapture: boolean
-  }[]>([]);
-  const [sideToSelectPieceFor, setSideToSelectPieceFor] = useState("");
-  const [possibleFenStrings, setPossibleFenStrings] = useState([startFen]);
-  const [disabledSides, setDisabledSides] = useState("");
 
-  useEffect(() => {
-    possibleMoves(startFen)
-      .then(res => {
-        setMoves(res);
-      })
-  }, [])
+  const [sideToSelectPieceFor, setSideToSelectPieceFor] = useState("");
 
   return (
     <div className={`border-black ${className}`}
@@ -102,23 +98,9 @@ const Game = ({
       <Board
         disabledSides={disabledSides}
         fenString={fen}
-        onMove={(start, target) => {
-          makeMove(fen, start, target).then(res => {
-            if (res !== "Move does not exist") {
-              setPossibleFenStrings(res);
-              if (res.length === 1) {
-                const newFen = res[0];
-                setFen(newFen);
-                possibleMoves(newFen).then(m => setMoves(m));
-                setDisabledSides("");
-              }
-              else {
-                setSideToSelectPieceFor(sideToMove(fen));
-              }
-            }
-          })
-        }}
-        validMoves={moves}
+        onWhiteMove={onWhiteMove}
+        onBlackMove={onBlackMove}
+        validMoves={validMoves}
         tileSize={tileSize}
         color1="#769656"
         color2="#eeeed2" />
@@ -130,24 +112,24 @@ const Game = ({
           onSelect={(piece) => {
             switch (piece) {
               case "q":
-                setFen(possibleFenStrings[0]);
-                possibleMoves(possibleFenStrings[0]).then(m => setMoves(m));
-                setDisabledSides("");
+                //setFen(possibleFenStrings[0]);
+                //possibleMoves(fen).then(m => setMoves(m));
+                //setDisabledSides("");
                 break;
               case "n":
-                setFen(possibleFenStrings[1]);
-                possibleMoves(possibleFenStrings[1]).then(m => setMoves(m));
-                setDisabledSides("");
+                //setFen(possibleFenStrings[1]);
+                //possibleMoves(fen[1]).then(m => setMoves(m));
+                //setDisabledSides("");
                 break;
               case "r":
-                setFen(possibleFenStrings[2]);
-                possibleMoves(possibleFenStrings[2]).then(m => setMoves(m));
-                setDisabledSides("");
+                //setFen(possibleFenStrings[2]);
+                //possibleMoves(possibleFenStrings[2]).then(m => setMoves(m));
+                //setDisabledSides("");
                 break;
               case "b":
-                setFen(possibleFenStrings[3]);
-                possibleMoves(possibleFenStrings[3]).then(m => setMoves(m));
-                setDisabledSides("");
+                //setFen(possibleFenStrings[3]);
+                //possibleMoves(possibleFenStrings[3]).then(m => setMoves(m));
+                //setDisabledSides("");
                 break;
             }
             setSideToSelectPieceFor("");

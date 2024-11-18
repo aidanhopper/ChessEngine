@@ -157,12 +157,13 @@ type BoardProps = {
   tileSize: number;
   color1: string;
   color2: string;
+  disabledSides?: string;
   validMoves?: { startingSquare: string, targetSquare: string, isCapture: boolean }[];
-  onMove?: (start: string, target: string) => void;
-  disabledSides: string;
+  onBlackMove?: (start: string, target: string) => void;
+  onWhiteMove?: (start: string, target: string) => void;
 }
 
-const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove, disabledSides }: BoardProps) => {
+const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides }: BoardProps) => {
 
   const [hoverIndex, setHoverIndex] = useState(-1);
   const [pickupIndex, setPickupIndex] = useState(-1);
@@ -225,8 +226,9 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove, disabl
             const side = piece.toLowerCase() === piece ? "b" : "w";
             const imagePath = `/assets/${piece}${side}.png`;
             const pieceIsDisabled =
-              disabledSides.split('').filter(e => side === e)
-                .length !== 0;
+              disabledSides !== undefined ?
+                disabledSides.split('').filter(e => side === e)
+                  .length !== 0 : false;
 
             return (
               <Piece
@@ -241,8 +243,12 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onMove, disabl
                   const start = toPosition(index);
                   const target = toPosition(hoverIndex);
 
-                  if (onMove) {
-                    onMove(start, target);
+                  if (side === "w" && onWhiteMove) {
+                    onWhiteMove(start, target);
+                  }
+
+                  if (side === "b" && onBlackMove) {
+                    onBlackMove(start, target);
                   }
 
                   setHoverIndex(-1);

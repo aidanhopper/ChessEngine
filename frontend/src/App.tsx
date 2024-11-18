@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Lobby from './pages/LobbyCreator';
+import Lobby from './pages/Lobby';
 import PageNotFound from './pages/PageNotFound';
 
 const App = () => {
