@@ -39,6 +39,7 @@
               haskellPackages.scotty
               haskellPackages.wai-cors
               haskellPackages.websockets
+              haskellPackages.postgresql-simple
             ]))
           ];
           buildPhase = ''
@@ -51,7 +52,6 @@
         };
       });
 
-
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
           packages = with pkgs; [
@@ -61,12 +61,14 @@
             haskellPackages.scotty
             haskellPackages.wai-cors
             haskellPackages.websockets
+            haskellPackages.postgresql-simple
             create-react-app
             nodejs_22
             go
             python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.scotty
+              haskellPackages.postgresql-simple
               haskellPackages.wai-cors
               haskellPackages.websockets
             ]))

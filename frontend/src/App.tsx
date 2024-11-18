@@ -1,53 +1,20 @@
-import Game from './Game'
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Lobby from './pages/LobbyCreator';
+import PageNotFound from './pages/PageNotFound';
 
 const App = () => {
-
-  const tileSize = 100;
-
-  const [channel, setChannel] = useState("");
-
-  const ws = new WebSocket("ws://127.0.0.1:4001")
-
-  ws.onopen = () => {
-    ws.send('Hello from client!');
-  }
-
-  ws.onmessage = (event) => {
-    console.log('Message from server ', event.data);
-  }
-
-  ws.onclose = () => {
-    console.log('Disconnected from websocket server');
-  }
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      <div className="m-auto">
-        <button
-          onClick={() => {
-            if (channel === "") {
-              fetch("http://localhost:4000/api/v1/create-lobby", {
-                method: 'GET',
-                mode: 'cors',
-                headers: {
-                  'Content-Type': 'text/plain',
-                },
-              })
-                .then(response => response.text())
-                .then(text => setChannel(text))
-            }
-
-            ws.send(`My channel is ${channel}`);
-          }}
-          className="border rounded border-black p-2 hover:bg-black hover:text-white
-          transition-colors duration-100 ease-in-out">
-          Play with a friend!
-        </button>
-      </div>
+    <div className="h-screen w-screen bg-white">
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/:lobby" element={<Lobby />} />
+          <Route path="/page-not-found" element={<PageNotFound />} />
+        </Routes>
+      </Router>
     </div>
-  )
-
+  );
 }
 
 export default App;
