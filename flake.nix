@@ -30,7 +30,27 @@
             cp engine $out/bin/engine
           '';
         };
+
+        backend = pkgs.stdenv.mkDerivation {
+          name = "backend";
+          src = ./backend; 
+          buildInputs = with pkgs; [
+            (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
+              haskellPackages.scotty
+              haskellPackages.wai-cors
+              haskellPackages.websockets
+            ]))
+          ];
+          buildPhase = ''
+            ghc Main.hs -o backend
+          '';
+          installPhase = ''
+            mkdir -p $out/bin
+            cp backend $out/bin/backend
+          '';
+        };
       });
+
 
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
@@ -40,12 +60,15 @@
             haskell-language-server
             haskellPackages.scotty
             haskellPackages.wai-cors
+            haskellPackages.websockets
             create-react-app
             nodejs_22
+            go
             python312
             (haskellPackages.ghcWithPackages (pkgs: with pkgs; [
               haskellPackages.scotty
               haskellPackages.wai-cors
+              haskellPackages.websockets
             ]))
           ] ++ (with pkgs.python312Packages; [
             pip
