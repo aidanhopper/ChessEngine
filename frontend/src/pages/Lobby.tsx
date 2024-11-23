@@ -1,8 +1,9 @@
 import { useParams } from 'react-router-dom';
 import { present } from '../Query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { sideToMove } from '../Utils'
 import Game from '../Game';
 
 const waitForWebSocketConnection = (callback: () => void, w: WebSocket) => {
@@ -28,76 +29,148 @@ const getSessionId = () => {
   }
 }
 
+const getCachedGameState = (lobby: string | undefined) => {
+  const state = sessionStorage.getItem("GAME_STATE");
+  const newState = {
+    lobby: lobby,
+    body: {
+      isStarted: false,
+      fen: "",
+      possibleMoves: [],
+      isMyTurn: false,
+      lastMove: [],
+    }
+  };
+
+  if (lobby === undefined) {
+    return newState.body;
+  }
+
+  if (state === null) {
+    sessionStorage.setItem("GAME_STATE", JSON.stringify(newState));
+    return newState.body;
+  }
+
+  const parsedState = JSON.parse(state);
+  if (parsedState.lobby !== lobby) {
+    sessionStorage.setItem("GAME_STATE", JSON.stringify(newState));
+    return newState.body;
+  }
+
+  return parsedState.body;
+}
+
+const setCachedGameState = (lobby: string, gameState: any) => {
+  const state = {
+    lobby: lobby,
+    body: gameState,
+  }
+  sessionStorage.setItem("GAME_STATE", JSON.stringify(state))
+}
+
+const sendRegisterMessage = (w: WebSocket, lobby: string) => {
+  w.send(JSON.stringify({
+    type: "register",
+    lobby: lobby,
+    move: [],
+  }));
+}
+
 const Lobby = () => {
-
-  const { lobby } = useParams();
   const navigate = useNavigate();
-  const [fen, setFen] = useState("")
-  const [loaded, setLoaded] = useState(false)
-  const w = new WebSocket(`ws://localhost:4000/ws?session=${getSessionId()}`);
+  const location = useLocation();
 
-  w.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    console.log(event.data)
-    console.log(data);
-    setFen(data.fen);
-  }
+  const isLobbyCreator = location.state === "creator";
+  const { lobby } = useParams();
+  const [gameState, setGameState] = useState(getCachedGameState(lobby));
 
-  w.onopen = () => {
-    console.log("connected to websocket");
-  }
+  const w = useMemo<WebSocket>(() => {
+    const w = new WebSocket(`ws://localhost:4000/ws?session=${getSessionId()}`);
 
-  w.onclose = () => {
-    console.log("disconnected from websocket");
-  }
-
-  if (lobby !== undefined) {
-    present(lobby, getSessionId()).then(res => {
-      if (!res.ok) {
-        w.close();
-        navigate("/page-not-found");
+    w.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      console.log(data)
+      setGameState(data)
+      if (lobby !== undefined) {
+        setCachedGameState(lobby, data)
       }
+    }
 
-      setLoaded(true);
+    return w;
+  }, [lobby])
 
-      waitForWebSocketConnection(() => {
-        w.send(JSON.stringify({
-          lobby: lobby,
-        }));
-      }, w);
-    });
-  } else {
-    w.close();
-    navigate("/page-not-found");
+  useEffect(() => {
+    if (lobby !== undefined) {
+      present(lobby, getSessionId()).then(res => {
+        if (!res.ok) {
+          navigate("/page-not-found");
+        }
+
+        if (isLobbyCreator) {
+          waitForWebSocketConnection(() => {
+            sendRegisterMessage(w, lobby);
+          }, w);
+        }
+      });
+    } else {
+      navigate("/page-not-found");
+    }
+  }, [lobby, navigate, w, isLobbyCreator])
+
+  const onMove = (start: string, target: string) => {
+    w.send(JSON.stringify({
+      type: "makemove",
+      lobby: lobby,
+      move: [start, target],
+    }));
   }
+
+  const disabledSides = gameState === undefined || !gameState.isMyTurn || !gameState.isStarted ? "wb" :
+    sideToMove(gameState.fen) === "w" ? "b" : "w"
 
   return (
     <h1 className="text-6xl m-auto text-center h-screen content-center">
       {
-        !loaded &&
-        <>
-          Loading...
-        </>
+        !gameState.isStarted
+        && (isLobbyCreator ?
+          <>
+            {lobby}
+          </> :
+          <>
+            <button className="text-xl duration-100 transition-colors
+                ease-in-out border-black rounded border-2 p-3 hover:bg-black
+                hover:text-white"
+              onClick={() => {
+                if (lobby) {
+                  sendRegisterMessage(w, lobby)
+                }
+              }}
+            >
+              Join?
+            </button>
+          </>)
       }
       {
-        fen === "" && loaded && lobby
-
+        gameState !== undefined
+        && gameState.isStarted
+        && (gameState.isMyTurn ?
+          <>YOUR TURN {sideToMove(gameState.fen)}</>
+          : <>NOT YOUR TURN</>)
       }
       {
-        fen !== "" && loaded &&
+        gameState !== undefined
+        && gameState.isStarted
+        &&
         <>
           <Game
             className="m-auto"
-            onWhiteMove={(start, target) => {
-
-            }}
-            onBlackMove={(start, target) => {
-
-            }}
-            tileSize={100}
-            disabledSides=""
-            fen={fen}
-            validMoves={[]}
+            onWhiteMove={onMove}
+            onBlackMove={onMove}
+            tileSize={60}
+            disabledSides={disabledSides}
+            fen={gameState.fen}
+            lastMove={gameState.lastMove}
+            validMoves={gameState.possibleMoves}
           />
         </>
       }

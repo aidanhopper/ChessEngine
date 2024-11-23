@@ -22,4 +22,5 @@ frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
 postgres_db
+pgadmin_data
 result

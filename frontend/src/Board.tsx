@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import Piece from './Piece'
-
-
+import Piece from './Piece';
+import { toPosition, fromPosition } from './Utils';
 import { Fen } from './Fen'
 import parseFen from './Fen'
 
@@ -17,153 +16,24 @@ const playCaptureSound = () => {
     .catch(error => console.error('Capture sound failed: ', error));
 }
 
-const fromPosition = (pos: string) => {
-  if (pos.length !== 2) {
-    throw new Error("Input position is invalid.");
-  }
-
-  const colChar = pos[0];
-  const rowChar = pos[1];
-
-  let col = -1;
-  switch (colChar) {
-    case 'a':
-      col = 0;
-      break;
-    case 'b':
-      col = 1;
-      break;
-    case 'c':
-      col = 2;
-      break;
-    case 'd':
-      col = 3;
-      break;
-    case 'e':
-      col = 4;
-      break;
-    case 'f':
-      col = 5;
-      break;
-    case 'g':
-      col = 6;
-      break;
-    case 'h':
-      col = 7;
-      break;
-  }
-
-  let row = -1;
-  switch (rowChar) {
-    case '1':
-      row = 7;
-      break;
-    case '2':
-      row = 6;
-      break;
-    case '3':
-      row = 5;
-      break;
-    case '4':
-      row = 4;
-      break;
-    case '5':
-      row = 3;
-      break;
-    case '6':
-      row = 2;
-      break;
-    case '7':
-      row = 1;
-      break;
-    case '8':
-      row = 0;
-      break;
-  }
-
-  if (row === -1 || col === -1) {
-    throw new Error("Input position is invalid.");
-  }
-
-  return (row * 8) + col
-}
-
-const toPosition = (index: number) => {
-  if (index < 0 || index > 63) {
-    throw new Error("Input index is invalid.");
-  }
-
-  let col = '';
-  switch (index % 8) {
-    case 0:
-      col = 'a';
-      break;
-    case 1:
-      col = 'b'
-      break;
-    case 2:
-      col = 'c';
-      break;
-    case 3:
-      col = 'd';
-      break;
-    case 4:
-      col = 'e';
-      break;
-    case 5:
-      col = 'f';
-      break;
-    case 6:
-      col = 'g';
-      break;
-    case 7:
-      col = 'h';
-      break;
-  }
-
-  let row = '';
-  switch (Math.floor(index / 8)) {
-    case 0:
-      row = '8';
-      break;
-    case 1:
-      row = '7'
-      break;
-    case 2:
-      row = '6';
-      break;
-    case 3:
-      row = '5';
-      break;
-    case 4:
-      row = '4';
-      break;
-    case 5:
-      row = '3';
-      break;
-    case 6:
-      row = '2';
-      break;
-    case 7:
-      row = '1';
-      break;
-  }
-
-  return col + row;
-}
-
 type BoardProps = {
   fenString: string;
   tileSize: number;
   color1: string;
   color2: string;
   disabledSides?: string;
-  validMoves?: { startingSquare: string, targetSquare: string, isCapture: boolean }[];
+  validMoves?: {
+    startingSquare: string;
+    targetSquare: string;
+    isCapture: boolean;
+    isPawnPromotion: boolean;
+  }[];
   onBlackMove?: (start: string, target: string) => void;
   onWhiteMove?: (start: string, target: string) => void;
+  lastMove?: string[],
 }
 
-const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides }: BoardProps) => {
+const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides, lastMove }: BoardProps) => {
 
   const [hoverIndex, setHoverIndex] = useState(-1);
   const [pickupIndex, setPickupIndex] = useState(-1);
@@ -220,6 +90,31 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
 
   return (
     <div className="flex-col absolute ">
+      {
+        lastMove && lastMove.length === 2 &&
+        <>
+          <div
+            className="absolute bg-orange-500 opacity-30"
+            style={{
+              width: `${tileSize}px`,
+              height: `${tileSize}px`,
+              transform: `translate(
+                ${(fromPosition(lastMove[0]) % 8) * tileSize}px,
+                ${(Math.floor(fromPosition(lastMove[0]) / 8)) * tileSize}px)`,
+            }}>
+          </div>
+          <div
+            className="absolute bg-orange-500 opacity-30"
+            style={{
+              width: `${tileSize}px`,
+              height: `${tileSize}px`,
+              transform: `translate(
+                ${(fromPosition(lastMove[1]) % 8) * tileSize}px,
+                ${(Math.floor(fromPosition(lastMove[1]) / 8)) * tileSize}px)`,
+            }}>
+          </div>
+        </>
+      }
       {
         squares.map((piece, index) => {
           if (piece !== ' ') {

@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import Board from './Board';
-import parseFen from './Fen';
-import { makeMove, possibleMoves } from './Query';
-
-const sideToMove = (fen: string) => {
-  return parseFen(fen).sideToMove;
-}
+import { fromPosition } from './Utils'
 
 const PromoPieceSelection = ({ side, tileSize, onSelect }:
   { side: string, tileSize: number, onSelect: (piece: string) => void }) => {
@@ -70,9 +65,11 @@ type GameProps = {
     startingSquare: string;
     targetSquare: string;
     isCapture: boolean;
+    isPawnPromotion: boolean;
   }[];
   disabledSides: string;
   fen: string;
+  lastMove: string[];
   className?: string;
 }
 
@@ -83,6 +80,7 @@ const Game = ({
   validMoves,
   disabledSides,
   fen,
+  lastMove,
   className,
 }: GameProps) => {
 
@@ -100,6 +98,7 @@ const Game = ({
         fenString={fen}
         onWhiteMove={onWhiteMove}
         onBlackMove={onBlackMove}
+        lastMove={lastMove}
         validMoves={validMoves}
         tileSize={tileSize}
         color1="#769656"

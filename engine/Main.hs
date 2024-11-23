@@ -40,7 +40,8 @@ data MoveRequest = MoveRequest
 data MoveResponse = MoveResponse
   { startingSquare :: String,
     targetSquare :: String,
-    isCapture :: Bool
+    isCapture :: Bool,
+    isPawnPromotion :: Bool
   }
   deriving (Show, Generic)
 
@@ -61,32 +62,35 @@ makeMoveFen f s t = do
   return $ map boardToFenString newBoards
 
 main :: IO ()
-main = scotty 3001 $ do
-  middleware simpleCors
+main = do
+  putStrLn "Starting on port 6000"
+  scotty 6000 $ do
+    middleware simpleCors
 
-  get "/hello" $ do
-    text "Hello"
+    get "/hello" $ do
+      text "Hello"
 
-  get "/possible-moves" $ do
-    fen <- queryParam "fen"
-    let board = parseBoard fen
-    case Chess.generateMoves <$> board of
-      Right moves ->
-        json $
-          map
-            ( \(Move s t f) ->
-                MoveResponse
-                  (convertIndex s)
-                  (convertIndex t)
-                  (Utils.isCapture f)
-            )
-            moves
-      Left err -> json err
+    get "/possible-moves" $ do
+      fen <- queryParam "fen"
+      let board = parseBoard fen
+      case Chess.generateMoves <$> board of
+        Right moves ->
+          json $
+            map
+              ( \(Move s t f) ->
+                  MoveResponse
+                    (convertIndex s)
+                    (convertIndex t)
+                    (Utils.isCapture f)
+                    (Utils.isPawnPromotion f)
+              )
+              moves
+        Left err -> json err
 
-  get "/make-move" $ do
-    fen <- queryParam "fen"
-    startingSqr <- queryParam "start"
-    targetSqr <- queryParam "target"
-    case makeMoveFen fen startingSqr targetSqr of
-      Right newFen -> json newFen
-      Left err -> json err
+    get "/make-move" $ do
+      fen <- queryParam "fen"
+      startingSqr <- queryParam "start"
+      targetSqr <- queryParam "target"
+      case makeMoveFen fen startingSqr targetSqr of
+        Right newFen -> json newFen
+        Left err -> json err

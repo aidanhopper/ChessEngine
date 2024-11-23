@@ -12,7 +12,7 @@ const Home = () => {
           onClick={() => {
             createLobby().then(res => {
               if (res.ok) {
-                navigate(`/${res.lobby}`)
+                navigate(`/${res.lobby}`, { state: "creator" })
               }
             });
           }}
