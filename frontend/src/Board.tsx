@@ -89,7 +89,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
   </>
 
   return (
-    <div className="flex-col absolute ">
+    <div className="flex-col absolute">
       {
         lastMove && lastMove.length === 2 &&
         <>
@@ -161,6 +161,8 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                         }
                       }
                     })
+                  } else {
+                    playMoveSound();
                   }
                 }}
                 onDrag={(e, data) => {

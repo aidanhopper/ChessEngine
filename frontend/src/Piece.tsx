@@ -22,9 +22,7 @@ const toPos = (index: number, tileSize: number) => {
 const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, onPickup, onPutdown, onDrag }: PieceProps) => {
 
   const defaultPosition = toPos(index, tileSize);
-
   const [position, setPosition] = useState(defaultPosition);
-
   const [z, setZ] = useState(0);
 
   const handlePickup: DraggableEventHandler = (e) => {
@@ -56,6 +54,8 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
     setPosition({ x: data.x, y: data.y })
   }
 
+  console.log("tileSize:", tileSize)
+
   return (
     <Draggable
       disabled={disabled}
@@ -70,9 +70,12 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
           zIndex: z,
         }}>
         <img
-          className="pointer-events-none select-none"
+          className="pointer-events-none select-none w-full"
           src={imagePath} alt="Piece"
-          style={{ width: `${tileSize}px` }} />
+          style={{
+            width: `${tileSize}px`
+          }}
+        />
       </div>
     </ Draggable>
   );

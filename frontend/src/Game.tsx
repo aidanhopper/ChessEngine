@@ -61,7 +61,7 @@ type GameProps = {
   tileSize: number;
   onWhiteMove: (start: string, end: string) => void;
   onBlackMove: (start: string, end: string) => void;
-  validMoves: {
+  validMoves?: {
     startingSquare: string;
     targetSquare: string;
     isCapture: boolean;
@@ -87,11 +87,10 @@ const Game = ({
   const [sideToSelectPieceFor, setSideToSelectPieceFor] = useState("");
 
   return (
-    <div className={`border-black ${className}`}
+    <div className={`${className}`}
       style={{
-        border: `${Math.floor(tileSize / 10)}px solid`,
-        width: `${tileSize * 8 + Math.floor(tileSize / 5) - 2}px`,
-        height: `${tileSize * 8 + Math.floor(tileSize / 5) - 2}px`,
+        width: `${tileSize * 8}px`,
+        height: `${tileSize * 8}px`,
       }}>
       <Board
         disabledSides={disabledSides}
