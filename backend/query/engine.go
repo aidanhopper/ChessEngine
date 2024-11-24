@@ -7,13 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
 
-const CHESS_ENGINE_URL = "http://localhost:6000"
 
 func PossibleMoves(fen string) (error, []types.PossibleMove) {
+  engineurl := os.Getenv("ENGINE_URL")
 	resp, err :=
-		http.Get(CHESS_ENGINE_URL + "/possible-moves?fen=" + url.QueryEscape(fen))
+		http.Get(engineurl + "/possible-moves?fen=" + url.QueryEscape(fen))
 	if err != nil {
 		log.Println("Error:", err)
 		return err, nil
@@ -36,8 +37,9 @@ func PossibleMoves(fen string) (error, []types.PossibleMove) {
 }
 
 func MakeMove(fen string, start string, target string) (error, []string) {
+  engineurl := os.Getenv("ENGINE_URL")
 	resp, err :=
-		http.Get(CHESS_ENGINE_URL + "/make-move?fen=" + url.QueryEscape(fen) + "&start=" + start + "&target=" + target)
+		http.Get(engineurl + "/make-move?fen=" + url.QueryEscape(fen) + "&start=" + start + "&target=" + target)
 	if err != nil {
 		log.Println("Make move failed")
 		return err, []string{fen}

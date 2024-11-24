@@ -93,6 +93,7 @@ func handleRegisterMessage(
 				PossibleMoves: possibleMoves,
 				IsMyTurn:      fenObj.SideToMove == "w",
 				LastMove:      lobby.LastMove,
+				IsCheckMate:   len(possibleMoves) == 0,
 			}
 
 			blackResponse := types.GameStateMessage{
@@ -101,6 +102,7 @@ func handleRegisterMessage(
 				PossibleMoves: possibleMoves,
 				IsMyTurn:      fenObj.SideToMove == "b",
 				LastMove:      lobby.LastMove,
+				IsCheckMate:   len(possibleMoves) == 0,
 			}
 
 			whiteData, _ := json.Marshal(whiteResponse)
@@ -154,6 +156,7 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					PossibleMoves: possibleMoves,
 					IsMyTurn:      updatedFenObjs[0].SideToMove == "w",
 					LastMove:      msg.Move,
+					IsCheckMate:   len(possibleMoves) == 0,
 				}
 
 				blackResponse := types.GameStateMessage{
@@ -162,6 +165,7 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					PossibleMoves: possibleMoves,
 					IsMyTurn:      updatedFenObjs[0].SideToMove == "b",
 					LastMove:      msg.Move,
+					IsCheckMate:   len(possibleMoves) == 0,
 				}
 
 				whiteData, _ := json.Marshal(whiteResponse)

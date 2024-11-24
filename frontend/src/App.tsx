@@ -43,9 +43,6 @@ const App = () => {
           </Routes>
         </Router>
       </div>
-      <div className="text-center text-gray-400 p-1 content-center">
-        made by @aidanhopper
-      </div>
     </div>
   );
 }

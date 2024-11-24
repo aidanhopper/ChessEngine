@@ -1,29 +1,5 @@
-const ENGINE_URL = "http://localhost:3001"
-const BACKEND_URL = "http://localhost:4000";
-
-export const possibleMoves = async (fen: string) => {
-  const url = `${ENGINE_URL}/possible-moves?fen=${encodeURIComponent(fen)}`
-
-  const response = await fetch(url, {
-    method: 'GET',
-    mode: 'cors',
-  })
-    .then(response => response.json());
-
-  return response;
-}
-
-export const makeMove = async (fen: string, start: string, target: string) => {
-  const url = `${ENGINE_URL}/make-move?fen=${encodeURIComponent(fen)}&start=${start}&target=${target}`
-
-  const response = await fetch(url, {
-    method: 'GET',
-    mode: 'cors',
-  })
-    .then(response => response.json())
-
-  return response;
-}
+//const BACKEND_URL = process.env.BACKEND_URL;
+const BACKEND_URL = "http://localhost:4000"
 
 export const createLobby = async () => {
   const response = await fetch(`${BACKEND_URL}/api/v1/create-lobby`, {

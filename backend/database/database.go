@@ -5,14 +5,21 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
 func Open() *sql.DB {
-	connStr := "postgres://root:root@localhost:5432/postgres?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+	//connStr := "postgres://root:root@localhost:5432/postgres?sslmode=disable"
+	dburl := os.Getenv("DB_URL")
+	if dburl == "" {
+		log.Println("DB_URL is not set")
+		os.Exit(0)
+	}
+
+	db, err := sql.Open("postgres", dburl)
 	if err != nil {
 		log.Fatal(err)
 	}

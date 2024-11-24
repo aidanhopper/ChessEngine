@@ -119,7 +119,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
         squares.map((piece, index) => {
           if (piece !== ' ') {
             const side = piece.toLowerCase() === piece ? "b" : "w";
-            const imagePath = `/assets/${piece}${side}.png`;
+            const imagePath = `/assets/${piece.toLowerCase()}${side}.png`;
             const pieceIsDisabled =
               disabledSides !== undefined ?
                 disabledSides.split('').filter(e => side === e)

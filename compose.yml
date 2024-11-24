@@ -10,6 +10,7 @@ services:
       - 5432:5432
     volumes:
       - ./postgres_db:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
   pgadmin:
     container_name: pgadmin
     image: dpage/pgadmin4:latest
@@ -26,7 +27,28 @@ services:
   engine:
     build: ./engine
     container_name: engine
-    image: engine:latest
     restart: unless-stopped
     ports:
       - 6000:6000
+  backend:
+    build: ./backend
+    container_name: backend
+    restart: unless-stopped
+    links:
+      - db:db
+      - engine:engine
+    ports:
+      - 4000:4000
+    environment:
+      DB_URL: postgres://root:root@db:5432/postgres?sslmode=disable
+      ENGINE_URL: http://engine:6000
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    links:
+      - backend:backend
+    environment:
+      BACKEND_URL: http://backend:4000

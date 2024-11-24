@@ -54,8 +54,6 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
     setPosition({ x: data.x, y: data.y })
   }
 
-  console.log("tileSize:", tileSize)
-
   return (
     <Draggable
       disabled={disabled}

@@ -24,6 +24,7 @@ type GameStateMessage struct {
 	PossibleMoves []PossibleMove `json:"possibleMoves"`
 	IsMyTurn      bool           `json:"isMyTurn"`
 	LastMove      []string       `json:"lastMove"`
+  IsCheckMate   bool           `json:"isCheckMate"`
 }
 
 type Fen struct {
