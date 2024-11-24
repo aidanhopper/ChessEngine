@@ -88,7 +88,7 @@ const Lobby = () => {
   const tileSize = Math.min(window.innerWidth, window.innerHeight) / 12;
 
   const w = useMemo<WebSocket>(() => {
-    const w = new WebSocket(`ws://localhost:4000/ws?session=${getSessionId()}`);
+    const w = new WebSocket(`ws://ahop.dev:4000/ws?session=${getSessionId()}`);
 
     w.onmessage = (event) => {
       const data = JSON.parse(event.data)

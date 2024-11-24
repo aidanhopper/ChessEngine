@@ -22,8 +22,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password
     ports:
       - 5050:80
-    volumes:
-      - ./pgadmin_data:/var/lib/pgadmin
   engine:
     build: ./engine
     container_name: engine
