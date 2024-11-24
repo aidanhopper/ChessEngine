@@ -51,4 +51,4 @@ services:
     links:
       - backend:backend
     environment:
-      BACKEND_URL: http://backend:4000
+      BACKEND_URL: http://ahop.dev:4000

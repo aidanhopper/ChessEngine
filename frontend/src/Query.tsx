@@ -1,5 +1,5 @@
 //const BACKEND_URL = process.env.BACKEND_URL;
-const BACKEND_URL = "http://localhost:4000"
+const BACKEND_URL = "http://ahop.dev:4000"
 
 export const createLobby = async () => {
   const response = await fetch(`${BACKEND_URL}/api/v1/create-lobby`, {
