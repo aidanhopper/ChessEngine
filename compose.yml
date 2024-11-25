@@ -13,6 +13,8 @@ services:
     container_name: pgadmin
     image: dpage/pgadmin4:latest
     restart: unless-stopped
+    ports:
+      - localhost:5050:80
     links:
       - db:database
     environment:
