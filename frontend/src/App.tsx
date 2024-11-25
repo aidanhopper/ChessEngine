@@ -45,6 +45,12 @@ const App = () => {
           </Routes>
         </Router>
       </div>
+      <div className="text-center content-end w-screen">
+        <div className="bg-gray-100 text-white font-extrabold italic
+        bg-gradient-to-r from-cyan-400/60 to-purple-400/60">
+          made by @aidanhopper 2024
+        </div>
+      </div>
     </div>
   );
 }

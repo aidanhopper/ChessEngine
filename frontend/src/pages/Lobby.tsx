@@ -134,7 +134,7 @@ const Lobby = () => {
         "b" : "w"
 
   return (
-    <div className="flex flex-col text-center content-center bg-gray-50 h-screen w-screen -mt-20">
+    <div className="flex flex-col text-center content-center bg-gray-50 h-screen w-screen -mt-24">
       {
         !gameState.isStarted
         && (isLobbyCreator ?
