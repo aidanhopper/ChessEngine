@@ -169,7 +169,7 @@ func serve() {
 }
 
 func main() {
-	godotenv.Load("./.env")
+	godotenv.Load()
 
 	db := database.Open()
 	defer db.Close()
