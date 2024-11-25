@@ -3,18 +3,7 @@ import Piece from './Piece';
 import { toPosition, fromPosition } from './Utils';
 import { Fen } from './Fen'
 import parseFen from './Fen'
-
-const playMoveSound = () => {
-  new Audio('/sounds/move.mp3')
-    .play()
-    .catch(error => console.error('Move sound failed: ', error));
-}
-
-const playCaptureSound = () => {
-  new Audio('/sounds/capture.mp3')
-    .play()
-    .catch(error => console.error('Capture sound failed: ', error));
-}
+import { playMoveSound, playCaptureSound } from './Audio';
 
 type BoardProps = {
   fenString: string;
@@ -149,19 +138,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                   setHoverIndex(-1);
                   setPickupIndex(-1);
 
-                  if (validMoves) {
-                    validMoves.forEach(elem => {
-                      if (elem.startingSquare === start &&
-                        elem.targetSquare === target) {
-                        if (elem.isCapture) {
-                          playCaptureSound();
-                        }
-                        else {
-                          playMoveSound();
-                        }
-                      }
-                    })
-                  } else {
+                  if (!validMoves) {
                     playMoveSound();
                   }
                 }}

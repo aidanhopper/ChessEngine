@@ -103,6 +103,7 @@ func handleRegisterMessage(
 				IsMyTurn:      fenObj.SideToMove == "b",
 				LastMove:      lobby.LastMove,
 				IsCheckMate:   len(possibleMoves) == 0,
+        SoundToPlay:   "",
 			}
 
 			whiteData, _ := json.Marshal(whiteResponse)
@@ -150,6 +151,12 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					updatedFenObjs = append(updatedFenObjs, parseFen(fen))
 				}
 
+				_, moveInfo := query.MoveInfo(lobby.Fen, msg.Move[0], msg.Move[1])
+				soundToPlay := "move"
+				if moveInfo.IsCapture {
+					soundToPlay = "capture"
+				}
+
 				whiteResponse := types.GameStateMessage{
 					IsStarted:     true,
 					Fen:           updatedFens[0],
@@ -157,6 +164,7 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					IsMyTurn:      updatedFenObjs[0].SideToMove == "w",
 					LastMove:      msg.Move,
 					IsCheckMate:   len(possibleMoves) == 0,
+					SoundToPlay:   soundToPlay,
 				}
 
 				blackResponse := types.GameStateMessage{
@@ -166,6 +174,7 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					IsMyTurn:      updatedFenObjs[0].SideToMove == "b",
 					LastMove:      msg.Move,
 					IsCheckMate:   len(possibleMoves) == 0,
+					SoundToPlay:   soundToPlay,
 				}
 
 				whiteData, _ := json.Marshal(whiteResponse)

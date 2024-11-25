@@ -70,6 +70,32 @@ main = do
     get "/hello" $ do
       text "Hello"
 
+    get "/move-info" $ do
+      fen <- queryParam "fen"
+      start <- queryParam "start"
+      target <- queryParam "target"
+      case filter
+        ( \(Move s t f) ->
+            convertIndex s == start
+              && convertIndex t == target
+        )
+        . Chess.generateMoves
+        <$> parseBoard fen of
+        Right moves ->
+          if length moves == 1
+            then
+              json
+                $ ( \(Move s t f) ->
+                      MoveResponse
+                        (convertIndex s)
+                        (convertIndex t)
+                        (Utils.isCapture f)
+                        (Utils.isPawnPromotion f)
+                  )
+                $ head moves
+            else json (pack "Move does not exist")
+        Left err -> json err
+
     get "/possible-moves" $ do
       fen <- queryParam "fen"
       let board = parseBoard fen

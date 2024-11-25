@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 import { useState, useEffect, useMemo } from 'react';
 import { sideToMove } from '../Utils'
 import Game from '../Game';
+import { playMoveSound, playCaptureSound } from '../Audio';
 
 const waitForWebSocketConnection = (callback: () => void, w: WebSocket) => {
   setTimeout(() => {
@@ -40,6 +41,7 @@ const getCachedGameState = (lobby: string | undefined) => {
       isMyTurn: false,
       lastMove: [],
       isCheckMate: false,
+      soundToPlay: "",
     }
   };
 
@@ -102,6 +104,14 @@ const Lobby = () => {
   }, [lobby])
 
   useEffect(() => {
+    switch (gameState.soundToPlay) {
+      case "": break;
+      case "move": playMoveSound(); break;
+      case "capture": playCaptureSound(); break;
+    }
+  }, [gameState]);
+
+  useEffect(() => {
     if (lobby !== undefined) {
       present(lobby, getSessionId()).then(res => {
         if (!res.ok) {
@@ -134,7 +144,7 @@ const Lobby = () => {
         "b" : "w"
 
   return (
-    <div className="flex flex-col text-center content-center bg-gray-50 h-screen w-screen -mt-24">
+    <div className="flex flex-col flex-auto text-center content-center h-full w-screen">
       {
         !gameState.isStarted
         && (isLobbyCreator ?
