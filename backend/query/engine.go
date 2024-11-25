@@ -63,7 +63,7 @@ func MakeMove(fen string, start string, target string) (error, []string) {
 func MoveInfo(fen string, start string, target string) (error, types.PossibleMove) {
 	engineurl := os.Getenv("ENGINE_URL")
 	resp, err :=
-		http.Get(engineurl + "/possible-moves?fen=" + url.QueryEscape(fen))
+		http.Get(engineurl + "/move-info?fen=" + url.QueryEscape(fen) + "&start=" + start + "&target=" + target)
 	if err != nil {
 		log.Println("Error:", err)
 		return err, types.PossibleMove{}

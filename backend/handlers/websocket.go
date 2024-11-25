@@ -5,6 +5,7 @@ import (
 	"backend/query"
 	"backend/types"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -94,6 +95,7 @@ func handleRegisterMessage(
 				IsMyTurn:      fenObj.SideToMove == "w",
 				LastMove:      lobby.LastMove,
 				IsCheckMate:   len(possibleMoves) == 0,
+				SoundToPlay:   "",
 			}
 
 			blackResponse := types.GameStateMessage{
@@ -103,7 +105,7 @@ func handleRegisterMessage(
 				IsMyTurn:      fenObj.SideToMove == "b",
 				LastMove:      lobby.LastMove,
 				IsCheckMate:   len(possibleMoves) == 0,
-        SoundToPlay:   "",
+				SoundToPlay:   "",
 			}
 
 			whiteData, _ := json.Marshal(whiteResponse)
@@ -151,11 +153,18 @@ func handleMakeMoveMessage(app *types.App, msg types.WebSocketReceivingMessage, 
 					updatedFenObjs = append(updatedFenObjs, parseFen(fen))
 				}
 
-				_, moveInfo := query.MoveInfo(lobby.Fen, msg.Move[0], msg.Move[1])
-				soundToPlay := "move"
-				if moveInfo.IsCapture {
-					soundToPlay = "capture"
-				}
+				soundToPlay := ""
+				err, moveInfo := query.MoveInfo(lobby.Fen, msg.Move[0], msg.Move[1])
+				if err == nil {
+					soundToPlay = "move"
+					if moveInfo.IsCapture {
+						soundToPlay = "capture"
+					}
+				} else {
+          log.Println("There was an error getting the move info: ", err)
+        }
+
+				fmt.Println(moveInfo)
 
 				whiteResponse := types.GameStateMessage{
 					IsStarted:     true,
