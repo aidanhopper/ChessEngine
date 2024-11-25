@@ -6,9 +6,9 @@ import PageNotFound from './pages/PageNotFound';
 const App = () => {
 
   return (
-    <div className="bg-white flex flex-col h-screen">
-      <div className="flex-auto z-10 sticky top-0 max-h-20 min-h-20 
-        content-center bg-white bg-opacity-75 backdrop-blur-lg">
+    <div className=" flex flex-col min-h-screen bg-white">
+      <div className="flex-auto z-10 fixed h-16 w-screen bg-gradient-to-r from-cyan-400/60 to-purple-400/60
+        content-center backdrop-blur-lg">
         <span className="container font-bold text-xl w-screen m-auto max-h-fit
           flex flex-row items-center content-center">
           <a href="/">
@@ -35,7 +35,8 @@ const App = () => {
           </a>
         </span>
       </div>
-      <div className="flex-1 flex bg-gray-50">
+      <div className="bg-white min-h-16 max-h-16" />
+      <div className="flex-1 flex flex-col ">
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
