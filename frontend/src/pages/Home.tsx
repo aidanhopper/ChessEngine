@@ -20,7 +20,7 @@ const FrontPageBoard = ({ tileSize, fen }: { tileSize: number, fen: string }) =>
 const PlayButtons = ({ onClick }: { onClick: () => void }) => {
   return (
     <div className="flex flex-col">
-      <div className="flex-auto p-1 font font-extrabold text-4xl">
+      <div className="flex-auto p-1 font font-extrabold text-4xl text-transparent bg-gradient-to-r from-cyan-600 to-purple-600 inline-block bg-clip-text">
         The worlds best open source <br /> online chess site
       </div>
       <button
