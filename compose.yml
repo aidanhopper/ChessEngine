@@ -6,8 +6,6 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-    ports:
-      - 5432:5432
     volumes:
       - ./postgres_db:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -20,33 +18,6 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: password
-    ports:
-      - 5050:80
-  engine:
-    build: ./engine
-    container_name: engine
-    restart: unless-stopped
-    ports:
-      - 6000:6000
-  backend:
-    build: ./backend
-    container_name: backend
-    restart: unless-stopped
-    links:
-      - db:db
-      - engine:engine
-    ports:
-      - 4000:4000
-    environment:
-      DB_URL: postgres://root:root@db:5432/postgres?sslmode=disable
-      ENGINE_URL: http://engine:6000
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    restart: unless-stopped
-    ports:
-      - 3000:3000
-    links:
-      - backend:backend
-    environment:
-      BACKEND_URL: http://ahop.dev:4000
+networks:
+  proxy:
+    name: proxy

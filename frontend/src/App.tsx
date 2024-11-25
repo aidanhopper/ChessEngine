@@ -4,6 +4,7 @@ import Lobby from './pages/Lobby';
 import PageNotFound from './pages/PageNotFound';
 
 const App = () => {
+
   return (
     <div className="bg-white flex flex-col h-screen">
       <div className="flex-auto z-10 sticky top-0 max-h-20 min-h-20 

@@ -6,9 +6,12 @@ import (
 	"backend/types"
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -153,7 +156,7 @@ func handleEndpoints(app *types.App) {
 	http.HandleFunc("/api/v1/present", func(w http.ResponseWriter, r *http.Request) {
 		PresentHandler(app, w, r)
 	})
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/v1/ws", func(w http.ResponseWriter, r *http.Request) {
 		handlers.WebSocketHandler(app, w, r)
 	})
 }
@@ -166,6 +169,8 @@ func serve() {
 }
 
 func main() {
+	godotenv.Load()
+
 	db := database.Open()
 	defer db.Close()
 	app := &types.App{
@@ -174,5 +179,20 @@ func main() {
 		Mutex:       &sync.Mutex{},
 	}
 	handleEndpoints(app)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join("./build", r.URL.Path)
+		_, err := os.Stat(path)
+
+		// If the requested file exists, serve it
+		if err == nil {
+			http.ServeFile(w, r, path)
+			return
+		}
+
+		// Otherwise, serve index.html for React Router routes
+		http.ServeFile(w, r, filepath.Join("./build", "index.html"))
+	})
+
 	serve()
 }
