@@ -25,9 +25,9 @@ services:
     build: ./engine
     container_name: engine
     restart: unless-stopped
-  backend:
+  app:
     build: .
-    container_name: backend
+    container_name: app
     restart: unless-stopped
     links:
       - db:db
