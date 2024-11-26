@@ -85,6 +85,7 @@ const Lobby = () => {
 
 
   const isLobbyCreator = location.state === "creator";
+  console.log(isLobbyCreator)
   const { lobby } = useParams();
   const [gameState, setGameState] = useState(getCachedGameState(lobby));
   const tileSize = Math.min(window.innerWidth, window.innerHeight) / 12;
@@ -113,17 +114,17 @@ const Lobby = () => {
 
   useEffect(() => {
     if (lobby !== undefined) {
-      present(lobby, getSessionId()).then(res => {
-        if (!res.ok) {
-          navigate("/page-not-found");
-        }
+      if (isLobbyCreator) {
+        present(lobby, getSessionId()).then(res => {
+          if (!res.ok) {
+            navigate("/page-not-found");
+          }
 
-        if (isLobbyCreator) {
           waitForWebSocketConnection(() => {
             sendRegisterMessage(w, lobby);
           }, w);
-        }
-      });
+        });
+      }
     } else {
       navigate("/page-not-found");
     }
@@ -144,24 +145,34 @@ const Lobby = () => {
         "b" : "w"
 
   return (
-    <div className="flex flex-col flex-auto text-center content-center h-full w-screen">
+    <div className="flex flex-col flex-auto text-center content-center  w-screen">
       {
         !gameState.isStarted
         && (isLobbyCreator ?
-          <div className="sm:text-4xl mx-auto content-center text-center h-full w-full">
-            <div className="m-10 text-2xl">
-              Give this link to a friend
-            </div>
-            <code className="bg-gray-100 p-5 rounded">
+          <div className="flex-auto sm:text-4xl mx-auto content-center h-full w-full">
+            <div className="inline-block flex-row bg-gray-100 rounded p-4 h-fill">
+              <div className="flex-auto text-left text-gray-400 text-sm mb-1">
+                  Send this to a friend
+              </div>
+              <code className="flex-auto content-center"> 
               https://chess.ahop.dev/{lobby}
-            </code>
+              </code>
+            </div>
           </div> :
-          <div>
-            <button className="border rounded border-black p-2 hover:bg-black
-            hover:text-white transition-colors duration-100 ease-in-out my-[25%]"
+          <div className="flex-auto content-center h-full w-fill m-auto">
+            <button className="flex border rounded border-black p-2 hover:bg-black
+            hover:text-white duration-100 ease-in-out content-center"
               onClick={() => {
                 if (lobby) {
-                  sendRegisterMessage(w, lobby)
+                  present(lobby, getSessionId()).then(res => {
+                    if (!res.ok) {
+                      navigate("/page-not-found");
+                    }
+
+                    waitForWebSocketConnection(() => {
+                      sendRegisterMessage(w, lobby);
+                    }, w);
+                  });
                 }
               }}
             >
