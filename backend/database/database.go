@@ -48,10 +48,11 @@ func GetLobby(app *types.App, lobby string) (error, types.Lobby) {
 	var playersPresent []string
 	var isGameStarted bool
 	var lastMoveJson string
+  var lobbyType string
 
 	err := app.Db.QueryRow(
-		"SELECT lobby_id, fen, players_present, is_game_started, last_move FROM lobbies WHERE lobby_id = $1",
-		lobby).Scan(&lobbyId, &fen, pq.Array(&playersPresent), &isGameStarted, &lastMoveJson)
+		"SELECT lobby_id, fen, players_present, is_game_started, last_move, lobby_type FROM lobbies WHERE lobby_id = $1",
+		lobby).Scan(&lobbyId, &fen, pq.Array(&playersPresent), &isGameStarted, &lastMoveJson, &lobbyType)
 
 	var lastMove []string
 	json.Unmarshal([]byte(lastMoveJson), &lastMove)
@@ -67,6 +68,7 @@ func GetLobby(app *types.App, lobby string) (error, types.Lobby) {
 		Sessions:      playersPresent,
 		IsGameStarted: isGameStarted,
 		LastMove:      lastMove,
+    Type:          lobbyType,
 	}
 }
 

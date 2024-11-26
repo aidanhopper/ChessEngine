@@ -2,28 +2,33 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Lobby from './pages/Lobby';
 import PageNotFound from './pages/PageNotFound';
+import { useNavigate } from 'react-router-dom';
 
-const App = () => {
+const Navbar = () => {
+
+  const navigate = useNavigate();
 
   return (
-    <div className=" flex flex-col min-h-screen bg-white">
+    <>
       <div className="flex-auto z-10 fixed h-16 w-screen bg-gradient-to-r from-cyan-500/80 to-purple-500/80
         content-center backdrop-blur-lg">
         <span className="container font-bold text-xl w-screen m-auto max-h-fit
           flex flex-row items-center content-center text-white">
-          <a href="/">
-            <img
-              className="w-10 border-2 border-black rounded-lg invert
-            hover:bg-black hover:bg-opacity-20 duration-100 ease-in-out mx-10"
-              alt="home"
-              src="/assets/pb.png" />
-          </a>
+            <button
+              className="w-10 mx-10"
+              onClick={() => navigate("/")}>
+              <img
+                className="w-10 border-2 border-black rounded-lg invert
+            hover:bg-black hover:bg-opacity-20 duration-100 ease-in-out"
+                alt="home"
+                src="/assets/pb.png" />
+            </button>
           <a className="flex border-black rounded-lg hover:bg-white hover:bg-opacity-20
-            hover:text-white py-1 px-8 italic" href="/">
+            hover:text-white py-1 px-8 italic duration-100 ease-in-out" href="/">
             portfolio
           </a>
           <a
-            className="flex ml-auto"
+            className="ml-auto w-10"
             href="https://github.com/aidanhopper/ChessEngine"
             rel="noreferrer"
             target="_blank">
@@ -36,22 +41,30 @@ const App = () => {
         </span>
       </div>
       <div className="bg-white min-h-16 max-h-16" />
-      <div className="flex-1 flex flex-col ">
-        <Router>
+    </>
+  );
+}
+
+const App = () => {
+  return (
+    <Router>
+      <div className=" flex flex-col min-h-screen bg-white">
+        <Navbar />
+        <div className="flex-1 flex flex-col ">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/:lobby" element={<Lobby />} />
             <Route path="/page-not-found" element={<PageNotFound />} />
           </Routes>
-        </Router>
-      </div>
-      <div className="text-center content-end w-screen">
-        <div className="bg-gray-100 text-white font-extrabold italic
+        </div>
+        <div className="text-center content-end w-screen">
+          <div className="bg-gray-100 text-white font-extrabold italic
         bg-gradient-to-r from-cyan-400/60 to-purple-400/60">
-          made by @aidanhopper 2024
+            made by @aidanhopper 2024
+          </div>
         </div>
       </div>
-    </div>
+    </Router>
   );
 }
 

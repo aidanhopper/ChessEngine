@@ -79,20 +79,35 @@ const sendRegisterMessage = (w: WebSocket, lobby: string) => {
   }));
 }
 
+const sendPresence = (lobby: string | undefined, w: WebSocket) => {
+  if (lobby === undefined) {
+    return false
+  }
+
+  present(lobby, getSessionId()).then(res => {
+    console.log(res)
+    if (!res.ok) {
+      return false
+    }
+    waitForWebSocketConnection(() => {
+      console.log("SENDING REGISTER MESSAGE")
+      sendRegisterMessage(w, lobby);
+    }, w);
+  });
+
+  return true
+}
+
 const Lobby = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-
   const isLobbyCreator = location.state === "creator";
-  console.log(isLobbyCreator)
   const { lobby } = useParams();
   const [gameState, setGameState] = useState(getCachedGameState(lobby));
   const tileSize = Math.min(window.innerWidth, window.innerHeight) / 12;
 
   const w = useMemo<WebSocket>(() => {
     const w = new WebSocket(`/api/v1/ws?session=${getSessionId()}`);
-
     w.onmessage = (event) => {
       const data = JSON.parse(event.data)
       setGameState(data)
@@ -100,7 +115,6 @@ const Lobby = () => {
         setCachedGameState(lobby, data)
       }
     }
-
     return w;
   }, [lobby])
 
@@ -113,20 +127,10 @@ const Lobby = () => {
   }, [gameState]);
 
   useEffect(() => {
-    if (lobby !== undefined) {
-      if (isLobbyCreator) {
-        present(lobby, getSessionId()).then(res => {
-          if (!res.ok) {
-            navigate("/page-not-found");
-          }
-
-          waitForWebSocketConnection(() => {
-            sendRegisterMessage(w, lobby);
-          }, w);
-        });
+    if (isLobbyCreator) {
+      if (!sendPresence(lobby, w)) {
+        navigate("/page-not-found");
       }
-    } else {
-      navigate("/page-not-found");
     }
   }, [lobby, navigate, w, isLobbyCreator])
 
@@ -152,10 +156,10 @@ const Lobby = () => {
           <div className="flex-auto sm:text-4xl mx-auto content-center h-full w-full">
             <div className="inline-block flex-row bg-gray-100 rounded p-4 h-fill">
               <div className="flex-auto text-left text-gray-400 text-sm mb-1">
-                  Send this to a friend
+                Send this to a friend
               </div>
-              <code className="flex-auto content-center"> 
-              https://chess.ahop.dev/{lobby}
+              <code className="flex-auto content-center">
+                https://chess.ahop.dev/{lobby}
               </code>
             </div>
           </div> :
@@ -163,16 +167,8 @@ const Lobby = () => {
             <button className="flex border rounded border-black p-2 hover:bg-black
             hover:text-white duration-100 ease-in-out content-center"
               onClick={() => {
-                if (lobby) {
-                  present(lobby, getSessionId()).then(res => {
-                    if (!res.ok) {
-                      navigate("/page-not-found");
-                    }
-
-                    waitForWebSocketConnection(() => {
-                      sendRegisterMessage(w, lobby);
-                    }, w);
-                  });
+                if (!sendPresence(lobby, w)) {
+                  navigate("/page-not-found")
                 }
               }}
             >
@@ -185,7 +181,7 @@ const Lobby = () => {
         && gameState.isStarted
         && gameState.isCheckMate
         &&
-        <div className="text-center mt-32 text-3xl">
+        <div className="text-center text-3xl">
           CHECK MATE
           <div className="font-bold">
             {

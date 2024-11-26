@@ -1,5 +1,5 @@
-export const createLobby = async () => {
-  const response = await fetch(`/api/v1/create-lobby`, {
+export const createLobby = async (type: string) => {
+  const response = await fetch(`/api/v1/create-lobby?type=${type}`, {
     method: 'GET',
     mode: 'cors',
   })

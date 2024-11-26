@@ -43,6 +43,7 @@ type Lobby struct {
 	Sessions      []string
 	IsGameStarted bool
 	LastMove      []string
+  Type          string
 }
 
 type CreateLobbyMessage struct {
@@ -52,7 +53,7 @@ type CreateLobbyMessage struct {
 
 type PresentMessage struct {
 	Ok   bool   `json:"ok"`
-	Info string `json:"info"`
+	Body any    `json:"body"`
 }
 
 type WebSocketReceivingMessage struct {

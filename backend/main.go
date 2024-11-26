@@ -40,6 +40,9 @@ func middleware(w *http.ResponseWriter) {
 func CreateLobbyHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	middleware(&w)
 
+	queryParams := r.URL.Query()
+	lobby_type := queryParams.Get("type")
+
 	lobby := generateRandomString(LOBBY_ID_SIZE)
 
 	response := types.CreateLobbyMessage{
@@ -51,12 +54,13 @@ func CreateLobbyHandler(app *types.App, w http.ResponseWriter, r *http.Request) 
 
 	// Insert the lobby into the database
 	_, err := app.Db.Exec(
-		"INSERT INTO lobbies (lobby_id, fen, players_present, is_game_started, last_move) VALUES ($1, $2, $3, $4, $5)",
+		"INSERT INTO lobbies (lobby_id, fen, players_present, is_game_started, last_move, lobby_type) VALUES ($1, $2, $3, $4, $5, $6)",
 		lobby,
 		START_FEN,
 		pq.Array([]string{}),
 		false,
-		lastMove)
+		lastMove,
+		lobby_type)
 
 	if err != nil {
 		log.Fatalf("Failed to insert empty array: %v", err)
@@ -74,9 +78,10 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	session := queryParams.Get("session")
 
 	if session == "" || lobby == "" {
+
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Need to include session and lobby in the query parameters",
+			Body: []byte("Need to include session and lobby in the query parameters"),
 		})
 		return
 	}
@@ -84,7 +89,7 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	if len(lobby) != LOBBY_ID_SIZE {
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Invalid lobby code",
+			Body: []byte("Invalid lobby code"),
 		})
 		return
 	}
@@ -92,7 +97,7 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	if len(session) != 36 {
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Invalid lobby code",
+			Body: []byte("Invalid lobby code"),
 		})
 		return
 	}
@@ -103,17 +108,29 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Lobby does not exist",
+			Body: []byte("Lobby does not exist"),
 		})
 		log.Println(err)
 		return
 	}
 
+	_, lobbyData := database.GetLobby(app, lobby)
+
+	type Info struct {
+		Type    string `json:"type"`
+		Message any    `json:"message"`
+	}
+
 	for i := range len(playersPresent) {
 		if playersPresent[i] == session {
+			data := Info{
+				Type:    lobbyData.Type,
+				Message: "Player is already in the lobby",
+			}
+
 			json.NewEncoder(w).Encode(types.PresentMessage{
 				Ok:   true,
-				Info: "Player already in lobby",
+				Body: data,
 			})
 			return
 		}
@@ -122,7 +139,7 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	if len(playersPresent) >= 2 {
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Lobby is full",
+			Body: "Lobby is full",
 		})
 		return
 	}
@@ -137,15 +154,20 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		json.NewEncoder(w).Encode(types.PresentMessage{
 			Ok:   false,
-			Info: "Updating players in lobby failed",
+			Body: []byte("Updating players in lobby failed"),
 		})
 		log.Println(err)
 		return
 	}
 
+	data := Info{
+		Type:    lobbyData.Type,
+		Message: "Added player to the lobby",
+	}
+
 	json.NewEncoder(w).Encode(types.PresentMessage{
 		Ok:   true,
-		Info: "Added player to the lobby",
+		Body: data,
 	})
 }
 
