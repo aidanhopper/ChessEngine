@@ -63,7 +63,7 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
       bounds="parent"
       position={position}
       defaultPosition={defaultPosition}>
-      <div className="absolute pointer-events-none select-none"
+      <div className="absolute select-none"
         style={{
           zIndex: z,
         }}>
