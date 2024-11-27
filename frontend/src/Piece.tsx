@@ -55,28 +55,30 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
   }
 
   return (
-    <Draggable
-      disabled={disabled}
-      onStart={handlePickup}
-      onStop={handlePutdown}
-      onDrag={handleDrag}
-      bounds="parent"
-      position={position}
-      defaultPosition={defaultPosition}>
-      <div className="absolute"
-        style={{
-          zIndex: z,
-        }}>
-        <img
-          draggable="false"
-          className="pointer-events-none select-none w-full"
-          src={imagePath} alt="Piece"
+    <div className="pointer-events-none select-none">
+      <Draggable
+        disabled={disabled}
+        onStart={handlePickup}
+        onStop={handlePutdown}
+        onDrag={handleDrag}
+        bounds="parent"
+        position={position}
+        defaultPosition={defaultPosition}>
+        <div className="absolute"
           style={{
-            width: `${tileSize}px`
-          }}
-        />
-      </div>
-    </ Draggable>
+            zIndex: z,
+          }}>
+          <img
+            draggable="false"
+            className="pointer-events-none select-none w-full"
+            src={imagePath} alt="Piece"
+            style={{
+              width: `${tileSize}px`
+            }}
+          />
+        </div>
+      </ Draggable>
+    </div>
   );
 }
 
