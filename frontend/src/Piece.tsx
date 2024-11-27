@@ -68,6 +68,7 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
           zIndex: z,
         }}>
         <img
+          draggable="false"
           className="pointer-events-none select-none w-full"
           src={imagePath} alt="Piece"
           style={{

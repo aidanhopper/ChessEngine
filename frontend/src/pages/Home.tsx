@@ -20,8 +20,8 @@ const FrontPageBoard = ({ tileSize, fen }: { tileSize: number, fen: string }) =>
 const PlayButtons = ({ navigate }: { navigate: any }) => {
   return (
     <div className="flex flex-col">
-      <div className="flex-auto p-1 font font-extrabold text-4xl text-transparent bg-gradient-to-r from-cyan-600 to-purple-600 inline-block bg-clip-text">
-        The worlds best open source <br /> online chess site
+      <div className="flex-auto p-1 font font-extrabold text-4xl text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 inline-block bg-clip-text">
+        A open source <br /> online chess site
       </div>
       <button
         onClick={() => {
@@ -31,9 +31,9 @@ const PlayButtons = ({ navigate }: { navigate: any }) => {
             }
           })
         }}
-        className="flex-auto border-4 rounded-lg border-gray-400 text-gray-500
-        font-bold m-auto px-12 md:w-96 py-2 mt-8 mb-4 hover:bg-black
-        hover:text-white hover:border-white duration-100 ease-in-out">
+        className="flex-auto rounded-lg border-gray-400 text-gray-800
+        font-bold m-auto px-12 md:w-96 py-2 mt-8 mb-4 hover:bg-gray-600 bg-blue-200
+        hover:text-white duration-100 ease-in-out">
         Play with a friend
       </button>
       <button
@@ -44,9 +44,9 @@ const PlayButtons = ({ navigate }: { navigate: any }) => {
             }
           })
         }}
-        className="flex-auto border-4 rounded-lg border-gray-400 text-gray-500
-        font-bold m-auto px-12 md:w-96 py-2 mb-4 hover:bg-black
-        hover:text-white hover:border-white duration-100 ease-in-out">
+        className="flex-auto rounded-lg border-gray-400 text-gray-800
+        font-bold m-auto px-12 md:w-96 py-2 hover:bg-gray-600 bg-blue-200
+        hover:text-white duration-100 ease-in-out">
         Play with the computer
       </button>
     </div>
