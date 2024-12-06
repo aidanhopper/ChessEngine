@@ -144,11 +144,11 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
   };
 
   const handleMouseDown = (e: any) => {
-    if (e.button !== 2) {
-      return;
+    if (e.button === 0) {
+      setArrows([]);
+    } else if (e.button === 2) {
+      setArrowStartIndex(calcIndexFromEvent(e));
     }
-
-    setArrowStartIndex(calcIndexFromEvent(e));
   };
 
   const handleMouseUp = (e: any) => {
@@ -169,21 +169,12 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
     setArrowStartIndex(-1);
   };
 
-  const handleKeyDown = (e: any) => {
-    if (e.key === "r") {
-      setArrows([]);
-    } 
-  }
-
   return (
     <div className="flex-col absolute"
       onContextMenu={(e: any) => e.preventDefault()}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-    >
+      onMouseLeave={handleMouseLeave}>
       {
         arrows.map(idxs => <>
           <Arrow size={tileSize} startIndex={idxs[0]} targetIndex={idxs[1]} />
@@ -233,7 +224,6 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                 onPickup={(e, index) => {
                   setHoverIndex(index);
                   setPickupIndex(index);
-                  setArrows([]);
                 }}
                 onPutdown={(e, data, index) => {
                   const start = toPosition(index);
