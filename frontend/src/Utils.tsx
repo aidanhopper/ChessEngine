@@ -139,3 +139,8 @@ export const sideToMove = (fen: string) => {
   return parseFen(fen).sideToMove;
 }
 
+export const toPos = (index: number, tileSize: number) => {
+  const posX = (index % 8) * tileSize;
+  const posY = (Math.floor(index / 8)) * tileSize;
+  return { x: posX, y: posY };
+}

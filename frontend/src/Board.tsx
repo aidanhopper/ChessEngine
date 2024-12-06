@@ -4,6 +4,62 @@ import { toPosition, fromPosition } from './Utils';
 import { Fen } from './Fen'
 import parseFen from './Fen'
 import { playMoveSound, playCaptureSound } from './Audio';
+import { toPos } from './Utils';
+
+const Arrow = ({ size, startIndex, targetIndex }:
+  { size: number, startIndex: number, targetIndex: number }) => {
+  const startPos = toPos(startIndex, size);
+  const targetPos = toPos(targetIndex, size);
+  const origin = { x: size / 6, y: size / 2, };
+  const start = { x: startPos.x / size, y: startPos.y / size };
+  const target = { x: targetPos.x / size, y: targetPos.y / size };
+  const diff = { x: target.x - start.x, y: target.y - start.y };
+  const h = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+  const length = Math.sqrt(
+    (targetPos.x - startPos.x) * (targetPos.x - startPos.x) +
+    (targetPos.y - startPos.y) * (targetPos.y - startPos.y)
+  );
+
+  const rot = () => {
+    const theta = Math.asin(diff.y / h);
+    let phi = Math.PI - theta;
+    if (diff.x <= 0) {
+      phi = theta;
+    }
+    return phi;
+  }
+
+  return (
+    <>
+      <div className="absolute"
+        style={{
+          transform: `translate(${origin.x + targetPos.x}px, ${origin.y + targetPos.y}px)`,
+          zIndex: 10,
+        }}>
+        <div className="opacity-80 absolute"
+          style={{
+            transform: `rotate(${-rot() - Math.PI / 2}rad)`,
+            transformOrigin: `${size / 3}px 0px`,
+          }}>
+          <div className="absolute"
+            style={{
+              borderWidth: `0 ${size / 3}px ${size / 3 + size / 20}px ${size / 3}px`,
+              borderColor: `transparent transparent orange transparent`,
+            }}>
+          </div>
+          <div className="absolute"
+            style={{
+              width: `${size / 4}px`,
+              height: `${length - (size * 0.6)}px`,
+              background: 'orange',
+              transform: `translate(${size / 5}px, ${size / 10 + size / 8}px)`
+            }}>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 type BoardProps = {
   fenString: string;
@@ -23,7 +79,8 @@ type BoardProps = {
 }
 
 const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides, lastMove }: BoardProps) => {
-
+  const [arrows, setArrows] = useState<number[][]>([]);
+  const [arrowStartIndex, setArrowStartIndex] = useState(-1);
   const [hoverIndex, setHoverIndex] = useState(-1);
   const [pickupIndex, setPickupIndex] = useState(-1);
 
@@ -77,8 +134,62 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
     </div>
   </>
 
+  const calcIndexFromEvent = (e: any) => {
+    const { left, top } = e.currentTarget.getBoundingClientRect();
+    const clickPos = {
+      x: Math.floor((e.clientX - left) / tileSize),
+      y: Math.floor((e.clientY - top) / tileSize)
+    };
+    return clickPos.y * 8 + clickPos.x;
+  };
+
+  const handleMouseDown = (e: any) => {
+    if (e.button !== 2) {
+      return;
+    }
+
+    setArrowStartIndex(calcIndexFromEvent(e));
+  };
+
+  const handleMouseUp = (e: any) => {
+    if (e.button !== 2) {
+      return;
+    }
+
+    const start = arrowStartIndex;
+    const end = calcIndexFromEvent(e);
+
+    if (start !== -1 && start !== end) {
+      arrows.push([start, end])
+      setArrows([...arrows]);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setArrowStartIndex(-1);
+  };
+
+  const handleKeyDown = (e: any) => {
+    if (e.key === "r") {
+      setArrows([]);
+    } 
+  }
+
   return (
-    <div className="flex-col absolute">
+    <div className="flex-col absolute"
+      onContextMenu={(e: any) => e.preventDefault()}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
+      {
+        arrows.map(idxs => <>
+          <Arrow size={tileSize} startIndex={idxs[0]} targetIndex={idxs[1]} />
+        </>
+        )
+      }
       {
         lastMove && lastMove.length === 2 &&
         <>
@@ -122,6 +233,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                 onPickup={(e, index) => {
                   setHoverIndex(index);
                   setPickupIndex(index);
+                  setArrows([]);
                 }}
                 onPutdown={(e, data, index) => {
                   const start = toPosition(index);

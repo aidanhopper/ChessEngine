@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Draggable, { DraggableEventHandler } from 'react-draggable';
+import { toPos } from './Utils';
 
 type PieceProps = {
   imagePath: string;
@@ -11,12 +12,6 @@ type PieceProps = {
   onPickup?: (e: MouseEvent | TouchEvent, index: number) => void;
   onPutdown?: (e: MouseEvent | TouchEvent, data: { x: number; y: number }, index: number) => void;
   onDrag?: (e: MouseEvent | TouchEvent, data: { x: number; y: number }) => void;
-}
-
-const toPos = (index: number, tileSize: number) => {
-  const posX = (index % 8) * tileSize;
-  const posY = (Math.floor(index / 8)) * tileSize;
-  return { x: posX, y: posY };
 }
 
 const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, onPickup, onPutdown, onDrag }: PieceProps) => {
@@ -65,6 +60,8 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
       defaultPosition={defaultPosition}>
       <div className="absolute select-none"
         style={{
+          width: `${tileSize}px`,
+          height: `${tileSize}px`,
           zIndex: z,
         }}>
         <img
