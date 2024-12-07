@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Draggable, { DraggableEventHandler } from 'react-draggable';
 import { toPos } from './Utils';
 
@@ -19,6 +19,10 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
   const defaultPosition = toPos(index, tileSize);
   const [position, setPosition] = useState(defaultPosition);
   const [z, setZ] = useState(0);
+
+  useEffect(() => {
+    setPosition(toPos(index, tileSize));
+  }, [tileSize, index]);
 
   const handlePickup: DraggableEventHandler = (e) => {
     if (onPickup) {

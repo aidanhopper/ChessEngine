@@ -104,17 +104,26 @@ const Lobby = () => {
   const isLobbyCreator = location.state === "creator";
   const { lobby } = useParams();
   const [gameState, setGameState] = useState(getCachedGameState(lobby));
-  const tileSize = Math.min(window.innerWidth, window.innerHeight) / 12;
+
+  const calcTileSize = () => Math.min(window.innerWidth, window.innerHeight) / 12;
+
+  const [tileSize, setTileSize] = useState(calcTileSize());
+
+  window.addEventListener("resize", () => {
+    setTileSize(calcTileSize());
+  });
 
   const w = useMemo<WebSocket>(() => {
     const w = new WebSocket(`/api/v1/ws?session=${getSessionId()}`);
+
     w.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      setGameState(data)
+      const data = JSON.parse(event.data);
+      setGameState(data);
       if (lobby !== undefined) {
-        setCachedGameState(lobby, data)
+        setCachedGameState(lobby, data);
       }
     }
+
     return w;
   }, [lobby])
 
@@ -196,7 +205,7 @@ const Lobby = () => {
         &&
         <>
           <div className="flex-auto content-center">
-            <div className="rounded-lg mx-auto border-8 border-black max-h-fit max-w-fit">
+            <div className="rounded-lg mx-auto border-black max-h-fit max-w-fit">
               <Game
                 onWhiteMove={onMove}
                 onBlackMove={onMove}

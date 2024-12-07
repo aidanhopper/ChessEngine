@@ -28,7 +28,7 @@ const Navbar = () => {
             portfolio
           </a>
           <a
-            className="ml-auto w-8"
+            className="ml-auto w-8 mr-8"
             href="https://github.com/aidanhopper/ChessEngine"
             rel="noreferrer"
             target="_blank">
