@@ -3,7 +3,7 @@ import Piece from './Piece';
 import { toPosition, fromPosition } from './Utils';
 import { Fen } from './Fen'
 import parseFen from './Fen'
-import { playMoveSound } from './Audio';
+import { playMoveSound, playCaptureSound } from './Audio';
 import { toPos } from './Utils';
 
 const Arrow = ({ size, startIndex, targetIndex }:
@@ -15,7 +15,6 @@ const Arrow = ({ size, startIndex, targetIndex }:
   const target = { x: targetPos.x / size, y: targetPos.y / size };
   const diff = { x: target.x - start.x, y: target.y - start.y };
   const h = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
-
   const length = Math.sqrt(
     (targetPos.x - startPos.x) * (targetPos.x - startPos.x) +
     (targetPos.y - startPos.y) * (targetPos.y - startPos.y)
@@ -177,12 +176,9 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}>
       {
-        arrows.map((idxs, i) =>
-          <Arrow
-            key={i}
-            size={tileSize}
-            startIndex={idxs[0]}
-            targetIndex={idxs[1]} />
+        arrows.map(idxs => <>
+          <Arrow size={tileSize} startIndex={idxs[0]} targetIndex={idxs[1]} />
+        </>
         )
       }
       {
@@ -282,7 +278,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
       }
       {
         validMoves !== undefined && pickupIndex !== -1 &&
-        validMoves.map((elem, i) => {
+        validMoves.map(elem => {
           const startIndex = fromPosition(elem.startingSquare);
           if (startIndex === pickupIndex) {
             const sqSize = tileSize / 3;
@@ -293,7 +289,6 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
               Math.floor(tileSize / 2 - sqSize / 2);
             return (
               <div
-                key={i}
                 className="absolute bg-green-700 rounded-full"
                 style={{
                   transform: `translate(${posX}px, ${posY}px)`,
@@ -319,20 +314,14 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
           }}>
         </div>
       }
-      <div
-        style={{
-          outline: `${tileSize/15}px solid black`,
-          borderRadius: `${tileSize/15}px`
-        }}>
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-        <Row1 />
-        <Row2 />
-      </div>
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
+      <Row1 />
+      <Row2 />
     </div>
   );
 }
