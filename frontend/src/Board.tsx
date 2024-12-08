@@ -314,14 +314,20 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
           }}>
         </div>
       }
-      <Row1 />
-      <Row2 />
-      <Row1 />
-      <Row2 />
-      <Row1 />
-      <Row2 />
-      <Row1 />
-      <Row2 />
+      <div className=""
+      style={{
+          outline: `black solid ${tileSize/10}px`,
+          borderRadius: `${tileSize/15}px`,
+        }}>
+        <Row1 />
+        <Row2 />
+        <Row1 />
+        <Row2 />
+        <Row1 />
+        <Row2 />
+        <Row1 />
+        <Row2 />
+      </div>
     </div>
   );
 }

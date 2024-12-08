@@ -4,7 +4,7 @@ import Game from '../Game';
 
 const FrontPageBoard = ({ tileSize, fen }: { tileSize: number, fen: string }) => {
   return (
-    <div className="max-w-fit border-8 border-black rounded-lg m-auto">
+    <div className="max-w-fit m-auto">
       <Game
         fen={fen}
         onBlackMove={(start, end) => { }}
