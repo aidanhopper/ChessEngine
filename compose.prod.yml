@@ -3,6 +3,8 @@ services:
     build: ./engine
     container_name: engine
     restart: unless-stopped
+    networks:
+      - traefik-public
   app:
     build: .
     container_name: app
