@@ -17,6 +17,9 @@ services:
       - "traefik.http.routers.chess.tls.certresolver=myresolver"
     networks:
       - traefik-public
+  db:
+    networks:
+      - traefik-public
 networks:
   traefik-public:
     external: true
