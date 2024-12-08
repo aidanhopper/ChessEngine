@@ -1,26 +1,4 @@
 services:
-  traefik:
-    image: traefik:v3.2.1
-    container_name: traefik
-    ports:
-      - 443:443
-      - 80:80
-      - 8080:8080
-    command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entryPoints.websecure.address=:443"
-      - "--entryPoints.web.address=:80"
-      - "--entryPoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entryPoints.web.http.redirections.entrypoint.scheme=https"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.myresolver.acme.email=aidanhop1@gmail.com"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
   engine:
     build: ./engine
     container_name: engine
