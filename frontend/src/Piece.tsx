@@ -24,7 +24,6 @@ const Piece = ({ imagePath, tileSize, index, hoverIndex, disabled, isValidMove, 
     setPosition(toPos(index, tileSize));
   }, [tileSize, index]);
 
-
   const handlePickup: DraggableEventHandler = (e) => {
     if (onPickup) {
       onPickup(e as MouseEvent | TouchEvent, index);

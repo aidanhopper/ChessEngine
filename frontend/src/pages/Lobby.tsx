@@ -161,9 +161,9 @@ const Lobby = () => {
       {
         !gameState.isStarted
         && (isLobbyCreator ?
-          <div className="flex-auto sm:text-4xl mx-auto content-center h-full w-full">
-            <div className="inline-block flex-row bg-gray-100 rounded p-4 h-fill">
-              <div className="flex-auto text-left text-gray-400 text-sm mb-1">
+          <div className="flex-auto sm:text-4xl mx-auto content-center h-full w-full text-black">
+            <div className="inline-block flex-row bg-white rounded p-4 h-fill">
+              <div className="flex-auto text-left text-sm mb-1">
                 Send this to a friend
               </div>
               <code className="flex-auto content-center">
@@ -172,15 +172,15 @@ const Lobby = () => {
             </div>
           </div> :
           <div className="flex-auto content-center h-full w-fill m-auto">
-            <button className="flex border rounded border-black p-2 hover:bg-black
-            hover:text-white duration-100 ease-in-out content-center"
+            <button className="flex rounded p-4 text-black bg-white
+            hover:invert-[30%] duration-100 ease-in-out content-center text-3xl"
               onClick={() => {
                 if (!sendPresence(lobby, w)) {
                   navigate("/page-not-found")
                 }
               }}
             >
-              Join?
+              Join chess.ahop.dev/{lobby}?
             </button>
           </div>)
       }
@@ -189,7 +189,7 @@ const Lobby = () => {
         && gameState.isStarted
         && gameState.isCheckMate
         &&
-        <div className="text-center text-3xl">
+        <div className="text-center text-3xl text-white content-end h-32">
           CHECK MATE
           <div className="font-bold">
             {

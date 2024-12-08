@@ -176,8 +176,8 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}>
       {
-        arrows.map(idxs => <>
-          <Arrow size={tileSize} startIndex={idxs[0]} targetIndex={idxs[1]} />
+        arrows.map((idxs, i) => <>
+          <Arrow key={i} size={tileSize} startIndex={idxs[0]} targetIndex={idxs[1]} />
         </>
         )
       }
@@ -273,12 +273,12 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
             );
           }
 
-          return <></>
+          return <span key={index}></span>
         })
       }
       {
         validMoves !== undefined && pickupIndex !== -1 &&
-        validMoves.map(elem => {
+        validMoves.map((elem, i) => {
           const startIndex = fromPosition(elem.startingSquare);
           if (startIndex === pickupIndex) {
             const sqSize = tileSize / 3;
@@ -290,6 +290,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
             return (
               <div
                 className="absolute bg-green-700 rounded-full"
+                key={i}
                 style={{
                   transform: `translate(${posX}px, ${posY}px)`,
                   width: `${Math.floor(sqSize)}px`,
@@ -314,10 +315,10 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
           }}>
         </div>
       }
-      <div className=""
-      style={{
-          outline: `black solid ${tileSize/10}px`,
-          borderRadius: `${tileSize/15}px`,
+      <div
+        style={{
+          outline: `${color2} solid ${tileSize / 10}px`,
+          borderRadius: `${tileSize / 15}px`,
         }}>
         <Row1 />
         <Row2 />
