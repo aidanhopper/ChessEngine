@@ -14,17 +14,21 @@ const Navbar = () => {
         content-center backdrop-blur-lg">
         <span className="container font-bold text-xl w-screen m-auto max-h-fit
           flex flex-row items-center content-center text-white">
-            <button
-              className="w-8 mx-10"
-              onClick={() => navigate("/")}>
-              <img
-                className="w-8 border-2 border-black rounded-lg invert
+          <button
+            className="w-8 mx-10"
+            onClick={() => navigate("/")}>
+            <img
+              className="w-8 border-2 border-black rounded-lg invert
             hover:bg-black hover:bg-opacity-20 duration-100 ease-in-out"
-                alt="home"
-                src="/assets/pb.png" />
-            </button>
-          <a className="flex border-black rounded-lg hover:bg-white hover:bg-opacity-20
-            hover:text-white py-1 px-8 italic duration-100 ease-in-out" href="/">
+              alt="home"
+              src="/assets/pb.png" />
+          </button>
+          <a
+            className="flex border-black rounded-lg hover:bg-white hover:bg-opacity-20
+            hover:text-white py-1 px-8 italic duration-100 ease-in-out"
+            href="https://ahop.dev"
+            target="_blank"
+            rel="noreferrer noopener">
             portfolio
           </a>
           <a
