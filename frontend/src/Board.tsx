@@ -160,9 +160,21 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
     const end = calcIndexFromEvent(e);
 
     if (start !== -1 && start !== end) {
+      // remove arrows that start at the same index
+      let removeIndex = -1;
+      arrows.forEach((a, i) => {
+        if (a[0] === start) {
+          removeIndex = i;
+        }
+      });
+
+      // push new arrow to the top
       arrows.push([start, end])
-      setArrows([...arrows]);
+
+      // filter the removed index and set the arrows to it
+      setArrows([...arrows.filter((_, i) => i !== removeIndex)]);
     }
+
   };
 
   const handleMouseLeave = () => {
@@ -221,11 +233,11 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                 key={index}
                 disabled={pieceIsDisabled}
                 hoverIndex={hoverIndex}
-                onPickup={(e, index) => {
+                onPickup={(_, index) => {
                   setHoverIndex(index);
                   setPickupIndex(index);
                 }}
-                onPutdown={(e, data, index) => {
+                onPutdown={(_, _data, index) => {
                   const start = toPosition(index);
                   const target = toPosition(hoverIndex);
 
@@ -244,7 +256,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
                     playMoveSound();
                   }
                 }}
-                onDrag={(e, data) => {
+                onDrag={(_, data) => {
                   const _hoverIndex =
                     Math.floor((data.x + (tileSize / 2)) / tileSize) +
                     (Math.floor((data.y + (tileSize / 2)) / tileSize) * 8);
@@ -319,6 +331,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
         style={{
           outline: `${color2} solid ${tileSize / 10}px`,
           borderRadius: `${tileSize / 15}px`,
+          outlineOffset: "-1px",
         }}>
         <Row1 />
         <Row2 />

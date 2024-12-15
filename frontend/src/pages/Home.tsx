@@ -7,8 +7,8 @@ const FrontPageBoard = ({ tileSize, fen }: { tileSize: number, fen: string }) =>
     <div className="max-w-fit m-auto">
       <Game
         fen={fen}
-        onBlackMove={(start, end) => { }}
-        onWhiteMove={(start, end) => { }}
+        onBlackMove={(_start, _end) => { }}
+        onWhiteMove={(_start, _end) => { }}
         tileSize={tileSize}
         lastMove={[]}
         disabledSides="wb"
@@ -21,7 +21,7 @@ const PlayButtons = ({ navigate }: { navigate: any }) => {
   return (
     <div className="flex flex-col">
       <div className="flex-auto p-1 font font-extrabold text-4xl text-transparent bg-gradient-to-r
-        from-white to-gray-300 inline-block bg-clip-text">
+        from-white to-gray-400 inline-block bg-clip-text">
         A open source <br /> online chess site
       </div>
       <button
@@ -41,7 +41,7 @@ const PlayButtons = ({ navigate }: { navigate: any }) => {
         onClick={() => {
           createLobby("1vcomputer").then(res => {
             if (res.ok) {
-              navigate(`/${res.lobby}`, {state: "creator"})
+              navigate(`/${res.lobby}`, { state: "creator" })
             }
           })
         }}
