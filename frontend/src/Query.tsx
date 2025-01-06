@@ -33,3 +33,6 @@ export const present = async (lobby: string, sessionId: string) => {
 
   return response
 }
+
+export const moveInfo = async (fen: string, start: string, target: string) => {
+}

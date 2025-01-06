@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Lobby from './pages/Lobby';
+import FenViewer from './pages/FenViewer';
 import PageNotFound from './pages/PageNotFound';
 import { useNavigate } from 'react-router-dom';
 
@@ -58,6 +59,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/:lobby" element={<Lobby />} />
+            <Route path="/fen-viewer" element={<FenViewer />} />
             <Route path="/page-not-found" element={<PageNotFound />} />
           </Routes>
         </div>

@@ -50,6 +50,15 @@ const PlayButtons = ({ navigate }: { navigate: any }) => {
         duration-100 ease-in-out">
         Play with the computer
       </button>
+      <button
+        className="flex-auto rounded-lg text-black
+        font-bold m-auto px-12 md:w-96 py-2 mb-4 hover:invert-[70%] bg-white
+        duration-100 ease-in-out"
+        onClick={() => {
+          navigate("/fen-viewer")
+        }}>
+        Fen Viewer
+      </button>
     </div>
   );
 }

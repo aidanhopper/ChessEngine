@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"backend/query"
 
 	"github.com/gorilla/websocket"
 
@@ -171,6 +172,23 @@ func PresentHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func MoveInfoHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
+	middleware(&w)
+
+	queryParams := r.URL.Query()
+
+	fen := queryParams.Get("fen")
+	start := queryParams.Get("start")
+	target := queryParams.Get("target")
+ 
+  _, data := query.MoveInfo(fen, start, target)
+
+	json.NewEncoder(w).Encode(types.PresentMessage{
+		Ok:   true,
+		Body: data,
+	})
+}
+
 func handleEndpoints(app *types.App) {
 	http.HandleFunc("/api/v1/create-lobby", func(w http.ResponseWriter, r *http.Request) {
 		CreateLobbyHandler(app, w, r)
@@ -181,6 +199,9 @@ func handleEndpoints(app *types.App) {
 	http.HandleFunc("/api/v1/ws", func(w http.ResponseWriter, r *http.Request) {
 		handlers.WebSocketHandler(app, w, r)
 	})
+  http.HandleFunc("/api/v1/move-info", func(w http.ResponseWriter, r*http.Request) {
+    MoveInfoHandler(app, w, r)
+  })
 }
 
 func serve() {

@@ -78,14 +78,8 @@ type BoardProps = {
   lastMove?: string[],
 }
 
-const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides, lastMove }: BoardProps) => {
-  const [arrows, setArrows] = useState<number[][]>([]);
-  const [arrowStartIndex, setArrowStartIndex] = useState(-1);
-  const [hoverIndex, setHoverIndex] = useState(-1);
-  const [pickupIndex, setPickupIndex] = useState(-1);
-
-  const f: Fen = parseFen(fenString);
-
+const createSquaresList = (fen: string): string[] => {
+  const f: Fen = parseFen(fen);
   const squares: string[] = []
 
   // Populate the squares list
@@ -101,6 +95,17 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
       }
     });
   });
+
+  return squares;
+}
+
+const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, onWhiteMove, disabledSides, lastMove }: BoardProps) => {
+  const [arrows, setArrows] = useState<number[][]>([]);
+  const [arrowStartIndex, setArrowStartIndex] = useState(-1);
+  const [hoverIndex, setHoverIndex] = useState(-1);
+  const [pickupIndex, setPickupIndex] = useState(-1);
+  const squares = createSquaresList(fenString);
+
 
   const s = {
     display: 'flex',

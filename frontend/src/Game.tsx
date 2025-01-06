@@ -86,6 +86,7 @@ const Game = ({
 
   const [sideToSelectPieceFor, setSideToSelectPieceFor] = useState("");
 
+  console.log("FEN", fen);
   return (
     <div className={`${className}`}
       style={{
