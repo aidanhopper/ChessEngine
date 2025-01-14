@@ -20,7 +20,7 @@ export const isLobbyAlive = async (lobby: string | undefined) => {
   })
     .then(response => response.json());
 
-  return response
+  return response;
 }
 
 export const present = async (lobby: string, sessionId: string) => {
@@ -31,8 +31,38 @@ export const present = async (lobby: string, sessionId: string) => {
   })
     .then(response => response.json());
 
-  return response
+  return response;
+}
+
+export const possibleMoves = async (fen: string) => {
+  const url = `/api/v1/possible-moves?fen=${encodeURIComponent(fen)}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+  })
+    .then(response => response.json());
+
+  return response;
 }
 
 export const moveInfo = async (fen: string, start: string, target: string) => {
+  const url = `/api/v1/move-info?fen=${encodeURIComponent(fen)}&start=${start}&target=${target}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+  })
+    .then(response => response.json());
+
+  return response;
+}
+
+export const makeMove = async (fen: string, start: string, target: string) => {
+  const url = `/api/v1/make-move?fen=${encodeURIComponent(fen)}&start=${start}&target=${target}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+  })
+    .then(response => response.json());
+
+  return response;
 }

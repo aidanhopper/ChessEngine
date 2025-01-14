@@ -3,6 +3,7 @@ package main
 import (
 	"backend/database"
 	"backend/handlers"
+	"backend/query"
 	"backend/types"
 	"encoding/json"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"backend/query"
 
 	"github.com/gorilla/websocket"
 
@@ -180,8 +180,46 @@ func MoveInfoHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
 	fen := queryParams.Get("fen")
 	start := queryParams.Get("start")
 	target := queryParams.Get("target")
- 
-  _, data := query.MoveInfo(fen, start, target)
+
+	_, data := query.MoveInfo(fen, start, target)
+
+	json.NewEncoder(w).Encode(types.PresentMessage{
+		Ok:   true,
+		Body: data,
+	})
+}
+
+func MakeMoveHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
+	middleware(&w)
+
+	queryParams := r.URL.Query()
+
+	fen := queryParams.Get("fen")
+	start := queryParams.Get("start")
+	target := queryParams.Get("target")
+
+	_, data := query.MakeMove(fen, start, target)
+
+	json.NewEncoder(w).Encode(types.PresentMessage{
+		Ok:   true,
+		Body: data,
+	})
+}
+
+func PossibleMovesHandler(app *types.App, w http.ResponseWriter, r *http.Request) {
+	middleware(&w)
+
+	queryParams := r.URL.Query()
+
+	fen := queryParams.Get("fen")
+
+	err, data := query.PossibleMoves(fen)
+	if err != nil {
+		json.NewEncoder(w).Encode(types.PresentMessage{
+			Ok: false,
+		})
+		return
+	}
 
 	json.NewEncoder(w).Encode(types.PresentMessage{
 		Ok:   true,
@@ -199,9 +237,15 @@ func handleEndpoints(app *types.App) {
 	http.HandleFunc("/api/v1/ws", func(w http.ResponseWriter, r *http.Request) {
 		handlers.WebSocketHandler(app, w, r)
 	})
-  http.HandleFunc("/api/v1/move-info", func(w http.ResponseWriter, r*http.Request) {
-    MoveInfoHandler(app, w, r)
-  })
+	http.HandleFunc("/api/v1/move-info", func(w http.ResponseWriter, r *http.Request) {
+		MoveInfoHandler(app, w, r)
+	})
+	http.HandleFunc("/api/v1/possible-moves", func(w http.ResponseWriter, r *http.Request) {
+		PossibleMovesHandler(app, w, r)
+	})
+	http.HandleFunc("/api/v1/make-move", func(w http.ResponseWriter, r *http.Request) {
+    MakeMoveHandler(app, w, r)
+	})
 }
 
 func serve() {

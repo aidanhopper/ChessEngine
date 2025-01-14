@@ -334,7 +334,7 @@ const Board = ({ fenString, tileSize, color1, color2, validMoves, onBlackMove, o
       }
       <div
         style={{
-          outline: `${color2} solid ${tileSize / 10}px`,
+          outline: `${color2} solid ${tileSize / 18}px`,
           borderRadius: `${tileSize / 15}px`,
           outlineOffset: "-1px",
         }}>

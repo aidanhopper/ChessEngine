@@ -1,5 +1,6 @@
 import Game from '../Game';
 import { useState, useRef, useEffect } from 'react';
+import { possibleMoves, makeMove } from '../Query';
 
 const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -10,20 +11,44 @@ const FenViewer = () => {
 
   const [tileSize, setTileSize] = useState(calcTileSize());
   const [fen, setFen] = useState(startFen);
+  const [validMoves, setValidMoves] = useState([]);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.value = startFen;
     }
+
+    possibleMoves(startFen).then(res => {
+      if (res.ok) {
+        setValidMoves(res.body);
+      }
+    });
   }, [])
 
   window.addEventListener("resize", () => {
     setTileSize(calcTileSize());
   });
 
-  const onMove = (start: string, end: string) => {
+  const onMove = (start: string, target: string) => {
+    makeMove(fen, start, target).then(res => {
+      console.log(res);
+      if (res.ok) {
+        const newFen = res.body[0]
 
+        setFen(newFen);
+        if (inputRef.current) {
+          inputRef.current.value = newFen;
+        }
+
+        possibleMoves(newFen).then(res => {
+          if (res.ok) {
+            setValidMoves(res.body);
+          }
+        })
+      }
+    });
   }
 
   return (
@@ -34,6 +59,7 @@ const FenViewer = () => {
         onWhiteMove={onMove}
         disabledSides=""
         fen={fen}
+        validMoves={validMoves}
         lastMove={[]}
       />
       <div className="flex mt-2">
@@ -46,7 +72,6 @@ const FenViewer = () => {
         <button
           className="mt-2 p-2 text-white bg-gray-700 hover:bg-gray-500 duration-100"
           onClick={() => {
-            console.log(inputRef.current?.value);
             if (inputRef.current) {
               setFen(inputRef.current?.value);
             }
