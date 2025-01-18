@@ -322,6 +322,8 @@ generateKnightMoves board =
                     }
                     : processPiece (bb `clearBit` targetIndex)
 
+-- Theres a problem with this fen string
+-- "8/8/8/8/8/7K/8/8 w kq - 0 1"
 generateKingMoves :: Board -> [Move]
 generateKingMoves board
   | activeKing == 0 = []
@@ -358,7 +360,13 @@ generateKingMoves board
       | activeSide == "w" = whitePieces board
       | otherwise = blackPieces board
 
-    regularKingMoves = shift kingMoveMask (-9 + index) .&. complement activePieces
+    -- TODO Add file mask when king is on file H or file A
+    regularKingMoves
+      | popCount (activeKing .&. fileAMask) == 1 = shiftedMask .&. complement fileHMask
+      | popCount (activeKing .&. fileHMask) == 1 = shiftedMask .&. complement fileAMask
+      | otherwise = shiftedMask
+      where
+        shiftedMask = shift kingMoveMask (-9 + index) .&. complement activePieces
 
     constructKingSideCastleMove :: [Move]
     constructKingSideCastleMove

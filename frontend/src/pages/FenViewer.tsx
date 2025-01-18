@@ -46,7 +46,7 @@ const FenViewer = () => {
           if (res.ok) {
             setValidMoves(res.body);
           }
-        })
+        });
       }
     });
   }
@@ -74,6 +74,11 @@ const FenViewer = () => {
           onClick={() => {
             if (inputRef.current) {
               setFen(inputRef.current?.value);
+              possibleMoves(inputRef.current?.value).then(res => {
+                if (res.ok) {
+                  setValidMoves(res.body);
+                }
+              });
             }
           }}
         >
